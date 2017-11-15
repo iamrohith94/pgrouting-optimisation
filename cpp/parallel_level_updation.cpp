@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 		boost::mpi::broadcast(world, num_connections, 0);
 	}
 	else {
+		std::vector<long int> sources;
+		std::vector<std::string> targets_array;
 		// After insertion run a parallel query to update the promoted levels
 		boost::mpi::broadcast(world, num_connections, 0);
 		int bucket_size, offset;
@@ -89,22 +91,27 @@ int main(int argc, char *argv[])
 				select_sql = (boost::format(select_sql) 
 				% bucket_size % offset).str();
 				pqxx::result R2( N.exec( select_sql.c_str() ));
-				N.commit();
+				//N.commit();
 				for (pqxx::result::const_iterator c = R2.begin(); c != R2.end(); ++c) {
-					
-					source = c[0].as<long int>();
+					sources.push_back(c[0].as<long int>());
 					targets = c[1].as<std::string>();
 					targets.erase(0, 1);
 					targets.erase(targets.size() - 1);
 					targets = "ARRAY["+targets+"]";
-					std::cout << "source: " << source << ", targets: "
-					<< targets << ", rank: " << world.rank() << std::endl;
-					//Updating promoted level of edges
+					targets_array.push_back(targets);
+				}
+				N.commit();
+				std::cout << "num connections: " << sources.size() 
+				<< ", rank: " << world.rank() << std::endl;
+				for (int i = 0; i < sources.size(); ++i) {
 					
+					//std::cout << "source: " << source << ", targets: "
+					//<< targets << ", rank: " << world.rank() << std::endl;
+					//Updating promoted level of edges	
 					pqxx::work W(C);
 					update_sql = (boost::format(update_sql) 
 					% edge_table % curr_level % W.quote(edges_sql) 
-					%source %targets %curr_level).str();
+					%sources[i] %targets_array[i] %curr_level).str();
 					std::cout << "update_query: " << update_sql  << std::endl;
 					W.exec(update_sql.c_str());
 					W.commit();
