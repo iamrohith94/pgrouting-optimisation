@@ -110,11 +110,11 @@ int main(int argc, char *argv[])
 					//<< targets << ", rank: " << world.rank() << std::endl;
 					//Updating promoted level of edges	
 					pqxx::work W(C);
-					update_sql = (boost::format(update_sql) 
+					temp = (boost::format(update_sql) 
 					%edge_table %curr_level %W.quote(edges_sql) 
 					%sources[i] %targets_array[i] %curr_level).str();
 					//std::cout << "update_query: " << update_sql  << std::endl;
-					W.exec(update_sql.c_str());
+					W.exec(temp.c_str());
 					W.commit();
 				}
 				//return 1;
