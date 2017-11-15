@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	/* Output the graph */
-	print_graph(g);
+	//print_graph(g);
 
 	std::vector<double> e_centrality(boost::num_edges(g));
 
@@ -75,11 +75,13 @@ int main(int argc, char* argv[]) {
 	if(flag == 1) {
 		//std::cout << "rank: " << world.rank() << std::endl;
 		//Extract the vertex descriptors of the sources into a queue
+
+		/*
 		std::cout << "sources: " << std::endl;
 		for (std::set<V>::iterator it=source_indexes.begin(); it!=source_indexes.end(); ++it) {
 		    source_vertices.push(*(vertices(g).first+*it));
 		    std::cout << "desC: " << source_vertices.top() << ", id: " << g[source_vertices.top()].id << std::endl;
-		}
+		}*/
 
 		
 		
