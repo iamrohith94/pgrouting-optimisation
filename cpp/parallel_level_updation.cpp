@@ -75,16 +75,17 @@ int main(int argc, char *argv[])
 		std::vector<std::string> targets_array;
 		// After insertion run a parallel query to update the promoted levels
 		boost::mpi::broadcast(world, num_connections, 0);
-		int bucket_size, offset;
+		int bucket_size, offset, limit;
 
 		if (num_connections > world.size()-1) {
 			bucket_size = num_connections/(world.size()-1);
-			if (world.rank() == world.size()-1)
-				bucket_size += num_connections%(world.size()-1);
 		}
 		else
 			bucket_size = 1;
 		offset = (world.rank()-1)*bucket_size;
+		limit = bucket_size;
+		if (world.rank() == world.size()-1)
+                	limit = bucket_size + (num_connections%(world.size()-1));
 		try {
 			conn_str = "dbname = %s user = postgres password = postgres \
 			hostaddr = 127.0.0.1 port = 5432";
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 			if (C.is_open()) {
 				pqxx::work N(C);
 				select_sql = (boost::format(select_sql) 
-				% bucket_size % offset).str();
+				% limit % offset).str();
 				pqxx::result R2( N.exec( select_sql.c_str() ));
 				//N.commit();
 				for (pqxx::result::const_iterator c = R2.begin(); c != R2.end(); ++c) {
