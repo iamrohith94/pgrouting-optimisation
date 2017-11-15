@@ -77,8 +77,11 @@ int main(int argc, char *argv[])
 		boost::mpi::broadcast(world, num_connections, 0);
 		int bucket_size, offset;
 
-		if (num_connections > world.size()-1)
+		if (num_connections > world.size()-1) {
 			bucket_size = num_connections/(world.size()-1);
+			if (world.rank() == world.size()-1)
+				bucket_size += num_connections%(world.size()-1);
+		}
 		else
 			bucket_size = 1;
 		offset = (world.rank()-1)*bucket_size;
