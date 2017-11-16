@@ -15,6 +15,13 @@ do
 	mpirun -n $2 ./p_l $1 $i
 done
 
+#Creating index on level and promoted_level columns
+psql -U postgres $1 < sql/level_indices.sql 
+
 #Updating the db with component values
 mpic++ -o p_c cpp/parallel_comp_updation.cpp -I/usr/local/include/ -lpq -lpqxx -lboost_graph_parallel -lboost_mpi -lboost_system -lboost_serialization
 mpirun -n $2 ./p_c $1
+
+#Asserting the columns in the table
+psql -U postgres $1 < sql/assertions.sql 
+
