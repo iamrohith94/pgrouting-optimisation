@@ -7,7 +7,7 @@
 int main(int argc, char *argv[])
 {
 	std::string conn_str, temp, dbname, edge_table, vertex_table, comp_sql, residue_sql,
-	e_update_sql, v_update_sql, edges_sql;
+	e_update_sql, v_update_sql_2, v_update_sql_1, edges_sql;
 	edge_table = "cleaned_ways";
 	vertex_table = "cleaned_ways_vertices_pgr";
 	int num_levels, num_iterations, num_connections, source;
@@ -24,15 +24,24 @@ int main(int argc, char *argv[])
 	residue_sql = "SELECT id, source, target, cost FROM %s WHERE promoted_level > %s";
 	comp_sql = "SELECT component, array_agg(node) AS vids \
 	FROM pgr_connectedComponents(%s) GROUP BY component;";
+	// Updates the components in edge table
 	e_update_sql = "UPDATE %s \
 	SET component[%s] = %s \
 	WHERE (source = ANY(%s) \
 	OR target = ANY(%s)) \
 	AND promoted_level > %s;";
 
-	v_update_sql = "UPDATE %s \
+	// Updates the components for non skeletal vertices
+	v_update_sql_1 = "UPDATE %s \
 	SET component[%s] = %s \
 	WHERE id = ANY(%s);";
+
+	// Updates the components for skeletal vertices
+	v_update_sql_2 = "UPDATE %s \
+	SET component[%s] = 1 \
+	FROM %s AS edges \
+	WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
+
 
 	boost::mpi::environment env(argc, argv);
 	boost::mpi::communicator world;
@@ -86,10 +95,17 @@ int main(int argc, char *argv[])
 					W1.commit();
 
 					pqxx::work W2(C);
-					temp = (boost::format(v_update_sql) %vertex_table 
+					temp = (boost::format(v_update_sql_1) %vertex_table 
 						%i %comp_id %component_vertices_array[j]).str();
 					W2.exec(temp.c_str());
 					W2.commit();
+
+
+					pqxx::work W3(C);
+					temp = (boost::format(v_update_sql_2) %vertex_table 
+						%i %edge_table %vertex_table %vertex_table %i).str();
+					W3.exec(temp.c_str());
+					W3.commit();
 				}
 
 			}
