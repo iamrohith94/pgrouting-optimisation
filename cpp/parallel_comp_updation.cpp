@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 		if (C.is_open()) {
 			std::vector<long int> component_ids;
 			std::vector<std::string> component_vertices_array;
-			std::cout << "min_level: " << min_level << ", max_level: " << max_level << std::endl;
+			//std::cout << "min_level: " << min_level << ", max_level: " << max_level << std::endl;
 
 			for (int i = min_level; i < max_level && i <= num_levels; ++i) {
 				pqxx::work N(C);

@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	boost::mpi::communicator world;
 	if (world.rank() == 0) {
 
-		std::cout << "dbname: " << dbname << ", level: " << curr_level << std::endl;
+		//std::cout << "dbname: " << dbname << ", level: " << curr_level << std::endl;
 		try {
 			conn_str = "dbname = %s user = postgres password = postgres \
 			hostaddr = 127.0.0.1 port = 5432";
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 				//std::cout << "connections_query: " << connections_sql  << std::endl;
 				pqxx::result cnt = W2.exec(connections_sql.c_str());
 				num_connections = cnt.affected_rows();
-				std::cout << "affected_rows: " <<  num_connections << std::endl;
+				//std::cout << "affected_rows: " <<  num_connections << std::endl;
 				W2.commit();
 				//return 1;
 			} else {
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 		offset = (world.rank()-1)*bucket_size;
 		limit = bucket_size;
 		if (world.rank() == world.size()-1)
-                	limit = bucket_size + (num_connections%(world.size()-1));
+            limit = bucket_size + (num_connections%(world.size()-1));
 		try {
 			conn_str = "dbname = %s user = postgres password = postgres \
 			hostaddr = 127.0.0.1 port = 5432";
@@ -106,8 +106,8 @@ int main(int argc, char *argv[])
 					targets_array.push_back(targets);
 				}
 				N.commit();
-				std::cout << "num connections: " << sources.size() 
-				<< ", rank: " << world.rank() << std::endl;
+				//std::cout << "num connections: " << sources.size() 
+				//<< ", rank: " << world.rank() << std::endl;
 				for (int i = 0; i < sources.size(); ++i) {
 					
 					//std::cout << "source: " << source << ", targets: "
