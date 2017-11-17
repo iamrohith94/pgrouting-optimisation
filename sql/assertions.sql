@@ -41,7 +41,7 @@ BEGIN
 	LOOP 
 		skeleton_sql := 'SELECT count(*) FROM ' 
 			|| edge_table || ' WHERE promoted_level <= ' || level
-			|| ' AND component[' || level || '] != 1';
+			|| ' AND component_' || level || ' != 1';
 		EXECUTE skeleton_sql INTO comp_count;
 		ASSERT comp_count = 0;
 	END LOOP;
@@ -69,7 +69,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| edge_table ||' GROUP BY component['||level||']) as foo;';
+		|| edge_table ||' GROUP BY component_'||level||') as foo;';
 		EXECUTE count_sql INTO level_edges;
 		ASSERT level_edges = total_edges;
 	END LOOP;
@@ -95,7 +95,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| vertex_table ||' GROUP BY component['||level||']) as foo;';
+		|| vertex_table ||' GROUP BY component_'||level||') as foo;';
 		EXECUTE count_sql INTO level_vertices;
 		ASSERT level_vertices = total_vertices;
 	END LOOP;
@@ -104,7 +104,7 @@ $BODY$
 LANGUAGE plpgsql VOLATILE STRICT;
 
 
-SELECT assert_skeleton_strongly_connected('cleaned_ways', 10);
-SELECT assert_skeleton_comp_id('cleaned_ways', 10);
-SELECT assert_edge_count('cleaned_ways', 10);
-SELECT assert_vertex_count('cleaned_ways_vertices_pgr', 10);
+SELECT assert_skeleton_strongly_connected('cleaned_ways', :num_levels);
+SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
+SELECT assert_edge_count('cleaned_ways', :num_levels);
+SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);

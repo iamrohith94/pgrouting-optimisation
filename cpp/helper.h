@@ -205,24 +205,25 @@ int dump_to_file(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_
 	const std::vector<double> edge_centrality, std::vector<int>& level, int num_levels,
 	std::string output_file, const char delimiter) {
 	std::ofstream myfile;
-	std::string comp_init="\"{";
+	/*
+	std::string comp_init="";
 	for (int j = 0; j < num_levels; ++j) {
 		if (j < num_levels-1)
 			comp_init +=  "1, ";
 		else
 			comp_init += "1";
 	}
-	comp_init += "}\"";
+	*/
 	get_levels(edge_centrality, num_levels, level);
-    myfile.open (("./data/"+output_file+".csv").c_str());
+    myfile.open (("./data/"+output_file+"_columns.csv").c_str());
 
     for (int i = 0; i < edge_centrality.size(); ++i) {
     	myfile << g[id_to_E[i]].id << delimiter
     	<< g[id_to_E[i]].source << delimiter
     	<< g[id_to_E[i]].target << delimiter
     	<< edge_centrality[i] << delimiter 
-    	<< level[i] << delimiter
-    	<< comp_init << std::endl;
+    	<< level[i] << std::endl;
+    	//<< comp_init << std::endl;
     }
     myfile.close();
     return 1;

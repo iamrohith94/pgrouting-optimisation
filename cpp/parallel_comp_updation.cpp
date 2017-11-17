@@ -26,19 +26,19 @@ int main(int argc, char *argv[])
 	FROM pgr_connectedComponents(%s) GROUP BY component;";
 	// Updates the components in edge table
 	e_update_sql = "UPDATE %s \
-	SET component[%s] = %s \
+	SET component_%s = %s \
 	WHERE (source = ANY(%s) \
 	OR target = ANY(%s)) \
 	AND promoted_level > %s;";
 
 	// Updates the components for non skeletal vertices
 	v_update_sql_1 = "UPDATE %s \
-	SET component[%s] = %s \
+	SET component_%s = %s \
 	WHERE id = ANY(%s);";
 
 	// Updates the components for skeletal vertices
 	v_update_sql_2 = "UPDATE %s \
-	SET component[%s] = 1 \
+	SET component_%s = 1 \
 	FROM %s AS edges \
 	WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
 

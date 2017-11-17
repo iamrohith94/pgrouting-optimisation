@@ -1,30 +1,62 @@
 DROP TABLE IF EXISTS cleaned_ways;
 DROP TABLE IF EXISTS cleaned_ways_vertices_pgr;
 DROP TABLE IF EXISTS components;
+DROP TABLE IF EXISTS performance_analysis;
 DROP INDEX IF EXISTS st_index;
 DROP INDEX IF EXISTS v_index;
 CREATE INDEX st_index ON ways(source, target);
 CREATE INDEX v_index ON ways_vertices_pgr(id);
-/* Cleaned ways table */
-CREATE TABLE cleaned_ways(
-   id 					BIGINT 		            NOT NULL,
-   source           	BIGINT    					NOT NULL,
-   target           	BIGINT     					NOT NULL,
-   cost        		DOUBLE PRECISION,
+DROP FUNCTION IF EXISTS create_graph_tables(TEXT, TEXT, INTEGER);
+CREATE OR REPLACE FUNCTION create_graph_tables(
+   edge_table TEXT,
+   vertex_table TEXT,
+   num_levels INTEGER)
+RETURNS VOID AS
+$BODY$
+DECLARE
+temp_sql TEXT;
+ways_sql TEXT;
+vertices_sql TEXT;
+BEGIN
+   
+   temp_sql = '';
+   FOR level IN 1..num_levels
+   LOOP 
+      -- RAISE NOTICE 'level %', level;
+      IF level = num_levels THEN
+         temp_sql := temp_sql || 'component_' || level || ' INTEGER DEFAULT 1';
+      ELSE 
+         temp_sql := temp_sql || 'component_' || level || ' INTEGER DEFAULT 1, ';
+      END IF;
+   END LOOP;
+
+   -- RAISE NOTICE 'temp_sql %', temp_sql;
+
+   ways_sql := 'CREATE TABLE ' ||edge_table||'(
+   id                BIGINT                  NOT NULL,
+   source            BIGINT                  NOT NULL,
+   target            BIGINT                  NOT NULL,
+   cost              DOUBLE PRECISION,
    x1                DOUBLE PRECISION,
    y1                DOUBLE PRECISION,
    x2                DOUBLE PRECISION,
    y2                DOUBLE PRECISION,
-   betweenness      	DOUBLE PRECISION,
-   level  				INTEGER 	DEFAULT 10,
-   promoted_level  	INTEGER 	DEFAULT 10,
-   component 			INTEGER[] 	DEFAULT '{}'
-);
-/* Cleaned vertices table */
-CREATE TABLE cleaned_ways_vertices_pgr(
-   id 				BIGINT 		PRIMARY KEY     NOT NULL,
-   component 		INTEGER[] 	DEFAULT '{}'
-);
+   betweenness       DOUBLE PRECISION,
+   level             INTEGER  DEFAULT 10,
+   promoted_level    INTEGER  DEFAULT 10, ' || temp_sql || ' );';
+
+   vertices_sql := 'CREATE TABLE ' ||vertex_table||'(
+   id                BIGINT                  NOT NULL,
+    ' || temp_sql || ' );';
+   EXECUTE ways_sql;
+   EXECUTE vertices_sql;
+END;
+
+$BODY$
+LANGUAGE plpgsql VOLATILE STRICT;
+
+SELECT create_graph_tables('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
+
 /* Components table */
 CREATE TABLE components(
 	id 					BIGINT 	 NOT NULL,
@@ -34,7 +66,7 @@ CREATE TABLE components(
 	num_border_nodes	INTEGER
 );
 
-/* Components table */
+/* Performance table */
 CREATE TABLE performance_analysis(
    source               BIGINT   NOT NULL,
    target               BIGINT  NOT NULL,
@@ -78,18 +110,4 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 /* Creating index on edge table */
 CREATE INDEX cst_index ON cleaned_ways(source, target);
 
-/* Importing results into temp table */
-DO $$
-DECLARE file_path TEXT;
-DECLARE file_name TEXT;
-DECLARE query TEXT;
-BEGIN
-   /*EXECUTE 'SELECT' 
-   file_path := '/home/rohithreddy/mystuff/research/parallel-betweenness/out_'
-                  || (SELECT :fname) || '.csv';
-   RAISE NOTICE 'File: %', file_path;*/
-
-
-END
-$$;
 
