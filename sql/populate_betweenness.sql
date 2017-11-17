@@ -10,7 +10,7 @@ CREATE TEMP TABLE tmp (
    level             INTEGER               
 );
 
-COPY tmp FROM '/home/rohithreddy/mystuff/research/parallel-betweenness/data/out_sample_data.csv' delimiter ',' csv;
+COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/out_chandigarh.csv' delimiter ',' csv;
 CREATE INDEX results_index ON tmp(id, source, target);
 
 UPDATE cleaned_ways
