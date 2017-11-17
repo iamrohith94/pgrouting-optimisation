@@ -182,7 +182,7 @@ int get_levels(std::vector<double> values, int num_levels, std::vector<int>& lev
 				//std::cout << "value: " << k << std::endl;
 				//std::cout << "caps[k]: " << caps[k] << ", "
 				//<< "caps[k+1]: " << caps[k+1] << std::endl;
-				level.push_back(k);
+				level.push_back(k+1);
 				break;
 			}
 		}
@@ -202,17 +202,27 @@ int get_random_sources(Graph &g, std::set<V>& indexes) {
 
 
 int dump_to_file(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_to_E,
-	const std::vector<double> edge_centrality, std::vector<int>& level,
+	const std::vector<double> edge_centrality, std::vector<int>& level, int num_levels,
 	std::string output_file, const char delimiter) {
 	std::ofstream myfile;
-	get_levels(edge_centrality, 10, level);
+	std::string comp_init="\"{";
+	for (int j = 0; j < num_levels; ++j) {
+		if (j < num_levels-1)
+			comp_init +=  "1, ";
+		else
+			comp_init += "1";
+	}
+	comp_init += "}\"";
+	get_levels(edge_centrality, num_levels, level);
     myfile.open (("./data/"+output_file+".csv").c_str());
+
     for (int i = 0; i < edge_centrality.size(); ++i) {
     	myfile << g[id_to_E[i]].id << delimiter
     	<< g[id_to_E[i]].source << delimiter
     	<< g[id_to_E[i]].target << delimiter
     	<< edge_centrality[i] << delimiter 
-    	<< level[i] << std::endl;
+    	<< level[i] << delimiter
+    	<< comp_init << std::endl;
     }
     myfile.close();
     return 1;

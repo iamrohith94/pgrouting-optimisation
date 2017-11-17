@@ -22,6 +22,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	std::string file_name(argv[1]);
+	int num_levels;
+	if (argc == 3)
+		num_levels = std::atoi(argv[2]);
+	else
+		num_levels = 10;
 	//int num_sources = std::atoi(argv[2]);
 
 	std::stack<V> source_vertices;
@@ -118,11 +123,11 @@ int main(int argc, char* argv[]) {
 			std::cout << "Starting dump... " << std::endl;
 			*/
 			std::vector<int> level;
-			get_levels(e_centrality, 10, level);
+			get_levels(e_centrality, num_levels, level);
 			//std::cout << "e_centrality size " << e_centrality.size() << std::endl;
 			//std::cout << "level size " << level.size() << std::endl;
 			assert(e_centrality.size() == level.size());
-			int dump_flag = dump_to_file(g, id_to_E, e_centrality, level, "out_"+file_name, ',');
+			int dump_flag = dump_to_file(g, id_to_E, e_centrality, level, num_levels, "out_"+file_name, ',');
 			//std::cout << "Dump flag: " << dump_flag << std::endl;
 			if(dump_flag != -1) {
 				std::cout << "Dump succeeded" << std::endl;
