@@ -110,4 +110,7 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 /* Creating index on edge table */
 CREATE INDEX cst_index ON cleaned_ways(source, target);
 
+--CREATE INDEX cs_index ON cleaned_ways(source);
+CREATE INDEX ct_index ON cleaned_ways(target);
+CREATE INDEX id_index ON cleaned_ways(id);
 

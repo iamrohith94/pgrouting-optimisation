@@ -37,11 +37,10 @@ int main(int argc, char *argv[])
 	WHERE id = ANY(%s);";
 
 	// Updates the components for skeletal vertices
-	v_update_sql_2 = "UPDATE %s \
-	SET component_%s = 1 \
-	FROM %s AS edges \
-	WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
-
+        v_update_sql_2 = "UPDATE %s \
+        SET component_%s = 1 \
+        FROM %s AS edges \
+        WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
 
 	boost::mpi::environment env(argc, argv);
 	boost::mpi::communicator world;
@@ -69,6 +68,7 @@ int main(int argc, char *argv[])
 			//std::cout << "min_level: " << min_level << ", max_level: " << max_level << std::endl;
 
 			for (int i = min_level; i < max_level && i <= num_levels; ++i) {
+				std::cout << "curr_level: " << i << ", rank " << world.rank() << std::endl;
 				pqxx::work N(C);
 				temp = (boost::format(residue_sql) %edge_table 
 					%i).str();
@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
 				}
 				N.commit();
 				for (int j = 0; j < component_ids.size(); ++j) {
+					
 					pqxx::work W1(C);
 					comp_id = component_ids[j]+1;
 					temp = (boost::format(e_update_sql) %edge_table 
@@ -93,19 +94,20 @@ int main(int argc, char *argv[])
 						%component_vertices_array[j] %i).str();
 					W1.exec(temp.c_str());
 					W1.commit();
-
+					
 					pqxx::work W2(C);
 					temp = (boost::format(v_update_sql_1) %vertex_table 
 						%i %comp_id %component_vertices_array[j]).str();
 					W2.exec(temp.c_str());
 					W2.commit();
 
-
 					pqxx::work W3(C);
-					temp = (boost::format(v_update_sql_2) %vertex_table 
-						%i %edge_table %vertex_table %vertex_table %i).str();
-					W3.exec(temp.c_str());
-					W3.commit();
+                                        temp = (boost::format(v_update_sql_2) %vertex_table
+                                                %i %edge_table %vertex_table %vertex_table %i).str();
+                                        W3.exec(temp.c_str());
+                                        W3.commit();
+					
+
 				}
 
 			}

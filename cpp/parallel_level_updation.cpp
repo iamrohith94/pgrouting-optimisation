@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
 			std::cerr << e.what() << std::endl;
 			//return -1;
 		}
+		//std::cout << "Sending conn_info: " << num_connections << ", rank: " << world.rank() << std::endl;
 		boost::mpi::broadcast(world, num_connections, 0);
 	}
 	else {
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
 		std::vector<std::string> targets_array;
 		// After insertion run a parallel query to update the promoted levels
 		boost::mpi::broadcast(world, num_connections, 0);
+		//std::cout << "Received conn_info: " << num_connections << ", rank: " << world.rank() << std::endl;
 		int bucket_size, offset, limit;
 
 		if (num_connections > world.size()-1) {
@@ -121,6 +123,7 @@ int main(int argc, char *argv[])
 					W.exec(temp.c_str());
 					W.commit();
 				}
+				std::cout << "Done with process " << world.rank() << std::endl;
 				//return 1;
 			} else {
 				std::cout << "Can't open database" << std::endl;

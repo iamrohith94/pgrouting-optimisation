@@ -7,7 +7,7 @@ CREATE TEMP TABLE tmp (
    level             INTEGER
 );
 
-COPY tmp FROM '/home/rohithreddy/mystuff/research/pgrouting-optimisation/data/out_sample_data_columns.csv' delimiter ',' csv;
+COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/square/out_chandigarh_cars.csv' delimiter ',' csv;
 CREATE INDEX results_index ON tmp(id, source, target);
 
 UPDATE cleaned_ways
