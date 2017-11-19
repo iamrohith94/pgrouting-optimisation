@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS cleaned_ways;
 DROP TABLE IF EXISTS cleaned_ways_vertices_pgr;
-DROP TABLE IF EXISTS contraction_results;
+DROP TABLE IF EXISTS contracted_ways;
+DROP TABLE IF EXISTS contracted_vertices;
 DROP TABLE IF EXISTS components;
 DROP TABLE IF EXISTS performance_analysis;
 DROP INDEX IF EXISTS st_index;
@@ -117,9 +118,9 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 SELECT id AS parent, contracted_vertices AS vids INTO contracted_vertices FROM pgr_contractGraph('SELECT id, source, target, cost FROM cleaned_ways', ARRAY[1]);
 
 /*Storing contracted edges*/
-SELECT * INTO contracted_ways FROM cleaned_ways 
-WHERE source IN (SELECT unnest(vids) FROM contracted_vertices)
-OR target IN  (SELECT unnest(vids) FROM contracted_vertices);
+SELECT id, source, target INTO contracted_ways FROM cleaned_ways 
+WHERE source IN (SELECT distinct(unnest(vids)) FROM contracted_vertices)
+OR target IN  (SELECT distinct(unnest(vids)) FROM contracted_vertices);
 CREATE INDEX cid_index ON contracted_ways(id);
 
 

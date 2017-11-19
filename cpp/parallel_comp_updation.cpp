@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
 						%component_vertices_array[j] %i).str();
 					W1.exec(temp.c_str());
 					W1.commit();
+
 					
 					pqxx::work W2(C);
 					temp = (boost::format(v_update_sql_1) %vertex_table 
@@ -101,14 +102,14 @@ int main(int argc, char *argv[])
 					W2.exec(temp.c_str());
 					W2.commit();
 
-					pqxx::work W3(C);
+
+				}
+				pqxx::work W3(C);
                                         temp = (boost::format(v_update_sql_2) %vertex_table
                                                 %i %edge_table %vertex_table %vertex_table %i).str();
                                         W3.exec(temp.c_str());
                                         W3.commit();
-					
 
-				}
 
 			}
 					//return 1;
