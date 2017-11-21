@@ -33,13 +33,41 @@ struct EdgeProperties {
 
 };
 
+struct VertexG {
+	long int id;
+	double x;
+	double y;
+};
+
+struct EdgeG {
+	long int id;
+	long int idx;
+	long int source;
+	long int target;
+	double weight;
+	int level;
+};
+
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexProperties, EdgeProperties> Graph;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, VertexG, EdgeG> GGraph;
 
 typedef  boost::graph_traits < Graph >::vertex_descriptor V;
 typedef  boost::graph_traits < Graph >::vertex_iterator V_i;
 typedef  boost::graph_traits < Graph >::edge_iterator E_i;
 typedef boost::graph_traits < Graph >::out_edge_iterator EO_i;
-void print_graph(Graph &g) {
+typedef boost::graph_traits < Graph >::in_edge_iterator IO_i;
+
+typedef  boost::graph_traits < GGraph >::vertex_descriptor V_g;
+typedef  boost::graph_traits < GGraph >::vertex_iterator V_i_g;
+typedef  boost::graph_traits < GGraph >::edge_iterator E_i_g;
+typedef boost::graph_traits < GGraph >::out_edge_iterator EO_i_g;
+typedef boost::graph_traits < GGraph >::in_edge_iterator IO_i_g;
+
+template<class G>
+void print_graph(G &g) {
+	typedef  typename boost::graph_traits < G >::vertex_iterator V_i;
+
+	typedef typename boost::graph_traits < G >::out_edge_iterator EO_i;
 	V_i vi;
 	EO_i out, out_end;
 	/* Vertices
@@ -66,6 +94,50 @@ void print_graph(Graph &g) {
         }
         std::cout << std::endl;
     }
+    std::cout << std::endl;
+
+}
+
+
+template<class G>
+void print_geom_graph(G &g) {
+	typedef  typename boost::graph_traits < G >::vertex_iterator V_i;
+
+	typedef typename boost::graph_traits < G >::out_edge_iterator EO_i;
+	V_i vi;
+	EO_i out, out_end;
+	/* Vertices
+	std::cout << "Vertices" << std::endl;
+	for (vi = vertices(g).first;
+                 vi != vertices(g).second; ++vi) {
+		std::cout << g[*vi].id << ", ";
+    }
+    std::cout << std::endl;
+	*/
+    //Edges
+    std::cout << "Vertices" << std::endl;
+    for (vi = boost::vertices(g).first;
+            vi != boost::vertices(g).second; ++vi) {
+    	std::cout << "id: " << g[*vi].id 
+    	<< ", x: " << g[*vi].x
+    	<< ", y: " << g[*vi].y
+    	<< std::endl;
+	} 
+	std::cout << "Edges" << std::endl;
+    for (vi = boost::vertices(g).first;
+            vi != boost::vertices(g).second; ++vi) {
+        std::cout << g[*vi].id << ": " << " out_edges_of(" << g[(*vi)].id << "):";
+        for (boost::tie(out, out_end) = out_edges(*vi, g);
+                out != out_end; ++out) {
+            std::cout << ' '
+                << g[*out].id << "=("
+                << g[*out].source << ", "
+                << g[*out].target << ") = "
+                << g[*out].weight <<"\t";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
 
 }
 
@@ -139,6 +211,76 @@ int construct_graph_from_file(std::string file_name, const char delimiter, Graph
 				id_to_E[edge_count] = p.first;
 				g[p.first].idx = edge_count++;
 				g[p.first].id = eid; 
+			}
+			
+		}
+
+	}
+	return 1;
+	
+}
+
+
+
+int construct_graph_with_geometry(std::string file_name, const char delimiter, GGraph &g, std::map<long int,
+	GGraph::vertex_descriptor>& id_to_V,
+	std::map<long int, GGraph::edge_descriptor>& id_to_E) {
+	std::ifstream file(("./data/"+file_name+".csv").c_str()); // pass file name as argment
+	std::string linebuffer;
+	long int eid, source, target;
+	double cost, x_1, y_1, x_2, y_2;
+	long int edge_count = 0;
+	int level;
+	std::pair<GGraph::edge_descriptor, bool> p;
+	while (file && getline(file, linebuffer)){
+		if (linebuffer.length() < 1)continue;
+		else {
+			std::vector<std::string> result;
+			std::stringstream ss(linebuffer);
+			std::string token;
+			while (std::getline(ss, token, delimiter)) {
+			    result.push_back(token);
+			}
+			if (result.size() < 9)
+				continue;
+			
+			eid = std::atol(result[0].c_str());
+			source = std::atol(result[1].c_str());
+			target = std::atol(result[2].c_str());
+			cost = std::atof(result[3].c_str());
+			x_1 = std::atof(result[4].c_str());
+			y_1 = std::atof(result[5].c_str());
+			x_2 = std::atof(result[6].c_str());
+			y_2 = std::atof(result[7].c_str());
+			level = std::atof(result[8].c_str());
+			
+			if (id_to_V.find(source) == id_to_V.end()) {
+				std::cout << "Adding vertex " <<  source << std::endl;
+				std::cout << "x: " << x_1 << ", y: " << y_1 << std::endl;
+				id_to_V[source] = boost::add_vertex(g);
+				g[id_to_V[source]].id = source;
+				g[id_to_V[source]].x = x_1;
+				g[id_to_V[source]].y = y_1;
+			}
+			if (id_to_V.find(target) == id_to_V.end()) {
+				std::cout << "Adding vertex " <<  target << std::endl;
+				id_to_V[target] = boost::add_vertex(g);
+				g[id_to_V[target]].id = target;
+				g[id_to_V[target]].x = x_2;
+				g[id_to_V[target]].y = y_2;
+
+				std::cout << "x: " << g[id_to_V[target]].x << ", y: " << g[id_to_V[target]].y << std::endl;
+			}
+			if (cost >= 0.00000) {
+				
+				p = boost::add_edge(id_to_V[source], id_to_V[target], g);
+				g[p.first].weight = cost;
+				g[p.first].source = source;
+				g[p.first].target = target;
+				id_to_E[edge_count] = p.first;
+				g[p.first].idx = edge_count++;
+				g[p.first].id = eid;
+				g[p.first].level = level;
 			}
 			
 		}

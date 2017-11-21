@@ -109,7 +109,7 @@ SELECT gid as id, source, target, cost, x1, y1, x2, y2, the_geom FROM ways WHERE
 AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN 
 (SELECT id FROM cleaned_ways_vertices_pgr)
 UNION ALL 
-SELECT gid as id, target, source, reverse_cost, x1, y1, x2, y2, the_geom FROM ways WHERE reverse_cost > 0
+SELECT gid as id, target, source, reverse_cost, x2, y2, x1, y1, the_geom FROM ways WHERE reverse_cost > 0
 AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN 
 (SELECT id FROM cleaned_ways_vertices_pgr);
 
