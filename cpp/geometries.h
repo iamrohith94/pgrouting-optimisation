@@ -730,102 +730,94 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 	std::map<long int, mpoint_t >& comp_geometries,
 	std::vector<PromotedEdge>& promoted_edges, int level) {
 
-	/*
-	std::cout << "Level Graph before" << std::endl;
-	print_geom_graph(lg);
-	*/
-	/*
-	std::cout << "components: " << std::endl;
-	print_vertex_components(lg, components);
-	*/
-	/*
-	std::cout << "geometries: " << std::endl;
-	print_comp_geometries(comp_geometries);
-	*/
-	std::cout << "num components: " << comp_geometries.size() << std::endl;
-	if (comp_geometries.size() == 1 && comp_vertices.size()) {
-		return;
-	}
-	/*
-	std::cout << "Comp geometries before" << std::endl;
-	print_comp_geometries(comp_geometries);
-	*/
-	mpoint_t empty_mpoint;
-	//std::cout << "Fetching nearest_comp" << std::endl;
-	int nearest_comp = get_closest_comp(0, comp_geometries);
-
-	
-	//std::cout << "nearest component to comp 0" << std::endl;
-	//std::cout << "id: " << nearest_comp << std::endl;
-	//std::cout << "geom: " << bg::dsv(comp_geometries[nearest_comp]) << std::endl;
-	if (nearest_comp == -1) {
-		std::cout << "Error finding nearest_comp" << std::endl;
-		return ;
-	}
-	
-
-	//Obtain the square bbox enclosing component 0 and its nearest comp
-	//std::cout << "Fetching bbox" << std::endl;
+	int nearest_comp;
 	bg::model::box<point_t> bbox;
-	get_bbox(comp_geometries[0], 
-		comp_geometries[nearest_comp],
-		bbox);
+	long int s_id, t_id;
+	while(comp_geometries.size() != 1) {
+		/*
+		std::cout << "Level Graph before" << std::endl;
+		print_geom_graph(lg);
+		*/
+		/*
+		std::cout << "components: " << std::endl;
+		print_vertex_components(lg, components);
+		*/
+		/*
+		std::cout << "geometries: " << std::endl;
+		print_comp_geometries(comp_geometries);
+		*/
+		std::cout << "num components: " << comp_geometries.size() << std::endl;
+		/*
+		std::cout << "Comp geometries before" << std::endl;
+		print_comp_geometries(comp_geometries);
+		*/
+		//std::cout << "Fetching nearest_comp" << std::endl;
+		nearest_comp = get_closest_comp(0, comp_geometries);
+
+		
+		//std::cout << "nearest component to comp 0" << std::endl;
+		//std::cout << "id: " << nearest_comp << std::endl;
+		//std::cout << "geom: " << bg::dsv(comp_geometries[nearest_comp]) << std::endl;
+		if (nearest_comp == -1) {
+			std::cout << "Error finding nearest_comp" << std::endl;
+			return ;
+		}
+		
+
+		//Obtain the square bbox enclosing component 0 and its nearest comp
+		//std::cout << "Fetching bbox" << std::endl;
+		get_bbox(comp_geometries[0], 
+			comp_geometries[nearest_comp],
+			bbox);
 
 
-	//std::cout << "Pick source and target" << std::endl;
-	// Pick the first vertices of both the components as source and target
-	long int s_id = *(comp_vertices[0].begin());
-	long int t_id = *(comp_vertices[nearest_comp].begin());
+		//std::cout << "Pick source and target" << std::endl;
+		// Pick the first vertices of both the components as source and target
+		s_id = *(comp_vertices[0].begin());
+		t_id = *(comp_vertices[nearest_comp].begin());
 
-	//std::cout << "s: " << s_id << ", t: " << t_id << std::endl;
- 
-
-
-
-	//std::cout << "Updating based on path" << std::endl;
-	// Adds path from source to target
-	update_graph_with_path(g, lg,
-		id_to_V, id_to_E,
-		id_to_V_l, id_to_E_l,
-		comp_vertices, comp_geometries,
-		promoted_edges,
-		s_id, t_id, bbox, level);
-
+		//std::cout << "s: " << s_id << ", t: " << t_id << std::endl;
 	
-	// Adds path from target to source
-	update_graph_with_path(g, lg,	
-		id_to_V, id_to_E,
-		id_to_V_l, id_to_E_l,
-		comp_vertices, comp_geometries,
-		promoted_edges,
-		t_id, s_id, bbox, level);
+		//std::cout << "Updating based on path" << std::endl;
+		// Adds path from source to target
+		update_graph_with_path(g, lg,
+			id_to_V, id_to_E,
+			id_to_V_l, id_to_E_l,
+			comp_vertices, comp_geometries,
+			promoted_edges,
+			s_id, t_id, bbox, level);
+
+		
+		// Adds path from target to source
+		update_graph_with_path(g, lg,	
+			id_to_V, id_to_E,
+			id_to_V_l, id_to_E_l,
+			comp_vertices, comp_geometries,
+			promoted_edges,
+			t_id, s_id, bbox, level);
 
 
-	#if 1
-	// Add geometry of nearest comp to component 0
-	//std::cout << "Updating comp 0 geom" << std::endl;
-	bg::append(comp_geometries[0], comp_geometries[nearest_comp]);
+		#if 1
+		// Add geometry of nearest comp to component 0
+		//std::cout << "Updating comp 0 geom" << std::endl;
+		bg::append(comp_geometries[0], comp_geometries[nearest_comp]);
 
-	// Erase the geometry of nearest comp
-	//std::cout << "Erasing nearest_comp geom" << std::endl;
-	comp_geometries.erase(nearest_comp);
-	//comp_geometries[nearest_comp] = empty_mpoint;
-	
-	//std::cout << "Updating comp 0 vertices" << std::endl;
-	// Add the component vertices of nearest comp to comp 0
-	comp_vertices[0].insert(comp_vertices[nearest_comp].begin(),
-		comp_vertices[nearest_comp].end());
-	comp_vertices.erase(nearest_comp);
+		// Erase the geometry of nearest comp
+		//std::cout << "Erasing nearest_comp geom" << std::endl;
+		comp_geometries.erase(nearest_comp);
+		//comp_geometries[nearest_comp] = empty_mpoint;
+		
+		//std::cout << "Updating comp 0 vertices" << std::endl;
+		// Add the component vertices of nearest comp to comp 0
+		comp_vertices[0].insert(comp_vertices[nearest_comp].begin(),
+			comp_vertices[nearest_comp].end());
+		comp_vertices.erase(nearest_comp);
+
+
+	}
 
 
 	#endif
-	//std::cout << "Calling again" << std::endl;
-	// Call the same function for the updated graph
-	_strong_connect_components(g, lg, 
-		id_to_V, id_to_E, 
-		id_to_V_l, id_to_E_l,
-		comp_vertices, comp_geometries,
-		promoted_edges, level);
 }
 
 
