@@ -2,36 +2,17 @@
 #include <boost/graph/distributed/mpi_process_group.hpp>
 #include <boost/graph/distributed/adjacency_list.hpp>
 #include <map>
-#include "ranker.h"
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
 #include <stdlib.h>
 #include <string>
 #include <stdio.h>
+
+#include "ranker.h"
+
+#include "types.h"
 //#include <boost/lexical_cast.hpp>
-struct VertexProperties {
-	long int id;
-	template <typename Ar> void serialize(Ar& ar, unsigned) { 
-	ar & id; 
-}
-};
-
-struct EdgeProperties {
-	long int id;
-	long int idx;
-	long int source;
-	long int target;
-	double weight;
-	template <typename Ar> void serialize(Ar& ar, unsigned) { 
-	ar & id;
-	ar & idx;
-	ar & source;
-	ar & target;
-	ar & weight; 
-}
-
-};
 
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexProperties, EdgeProperties> Graph;
