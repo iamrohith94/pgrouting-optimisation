@@ -36,7 +36,8 @@ int main(int argc, char const *argv[])
 	std::map<long int, GGraph::edge_descriptor> id_to_E_l;
 	std::vector<PromotedEdge> promoted_edges;
 	strong_connect_components_levels(g, lg, 
-			id_to_V, id_to_E,
+			id_to_V, 
+			//id_to_E,
 			id_to_V_l, id_to_E_l,
 			promoted_edges, num_levels);
 
