@@ -198,6 +198,15 @@ void get_bbox(mpoint_t mp1, mpoint_t mp2, bg::model::box<point_t>& bbox) {
 	get_square_bbox(bbox);
 }
 
+void get_bbox(point_t p1, point_t p2, bg::model::box<point_t>& bbox) {
+	mpoint_t total_comp;
+	bg::append(total_comp, p1);
+	bg::append(total_comp, p2);
+	//bg::union_(mp1, mp2, total_comp);
+	bg::envelope(total_comp, bbox);
+	get_square_bbox(bbox);
+}
+
 #if 0
 void get_bbox(GGraph& lg, std::vector<int> components, V_g source, V_g target, 
 	bg::model::box<point_t>& bbox) {
@@ -715,7 +724,7 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 		std::cout << "geometries: " << std::endl;
 		print_comp_geometries(comp_geometries);
 		*/
-		//std::cout << "num components: " << comp_geometries.size() << std::endl;
+		std::cout << "num components: " << comp_geometries.size() << std::endl;
 		/*
 		std::cout << "Comp geometries before" << std::endl;
 		print_comp_geometries(comp_geometries);
@@ -733,17 +742,19 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 		}
 		
 
-		//Obtain the square bbox enclosing component 0 and its nearest comp
-		//std::cout << "Fetching bbox" << std::endl;
-		get_bbox(comp_geometries[0], 
-			comp_geometries[nearest_comp],
-			bbox);
 
 
 		//std::cout << "Pick source and target" << std::endl;
 		// Pick the first vertices of both the components as source and target
 		s_id = *(comp_vertices[0].begin());
 		t_id = *(comp_vertices[nearest_comp].begin());
+
+
+		//Obtain the square bbox with enclosure starting from source,target
+		//std::cout << "Fetching bbox" << std::endl;
+		get_bbox(point_t(lg[id_to_V_l[s_id]].x, lg[id_to_V_l[s_id]].y), 
+			point_t(lg[id_to_V_l[t_id]].x, lg[id_to_V_l[t_id]].y),
+			bbox);
 
 		//std::cout << "s: " << s_id << ", t: " << t_id << std::endl;
 	
