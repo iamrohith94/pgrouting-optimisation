@@ -34,15 +34,15 @@ int main(int argc, char const *argv[])
 	GGraph lg;
 	std::map<long int, GGraph::vertex_descriptor> id_to_V_l;
 	std::map<long int, GGraph::edge_descriptor> id_to_E_l;
-	std::vector<PromotedEdge> promoted_edges;
+	std::vector<Connection> Connection;
 	strong_connect_components_levels(g, lg, 
 			id_to_V, 
 			//id_to_E,
 			id_to_V_l, id_to_E_l,
-			promoted_edges, num_levels);
+			Connection, num_levels);
 
 	//std::cout << "Promoted Edges: " << std::endl;
-	for (int i = 0; i < promoted_edges.size(); ++i) {
+	for (int i = 0; i < Connection.size(); ++i) {
 		/*
 		std::cout << "id: " << promoted_edges[i].id
 		<< ", source: " << promoted_edges[i].source
@@ -50,10 +50,10 @@ int main(int argc, char const *argv[])
 		<< ", level: " << promoted_edges[i].level
 		<< std::endl;
 		*/
-		std::cout << promoted_edges[i].id
-		<< ", " << promoted_edges[i].source
-		<< ", " << promoted_edges[i].target
-		<< ", " << promoted_edges[i].level
+		std::cout 
+		<< ", " << Connection[i].source
+		<< ", " << Connection[i].target
+		<< ", " << Connection[i].level
 		<< std::endl;
 	}
 	#if 0

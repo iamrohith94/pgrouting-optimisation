@@ -45,3 +45,9 @@ struct PromotedEdge {
 	long int target;
 	int level;
 };
+
+struct Connection {
+	long int source;
+	long int target;
+	int level;
+};

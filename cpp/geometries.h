@@ -445,7 +445,8 @@ lg: Graph at that level
 path: A sequence of vertex ids of the path
 level: Level of the graph
 */
-void add_path_at_level(GGraph& g, 
+void add_path_at_level(
+	GGraph& g, 
 	GGraph& lg, 
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
 	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
@@ -454,53 +455,41 @@ void add_path_at_level(GGraph& g,
 	std::vector<long int>& path, int level) {
 
 	//std::cout << "Adding path at level..." << std::endl;
-	long int source, target;
-	EdgeG edge;
-	for (int i = 0; i < path.size()-1; ++i) {
-		edge = get_edge(g, id_to_V, 
-			//id_to_E,
-		path[i], path[i+1]);
-		//std::cout << "source: " << edge.source << ", target" << edge.target << std::endl;
-		add_edge_to_graph(lg, id_to_V_l, id_to_E_l, edge.id,
-		edge.source, edge.target, edge.weight, 
-		g[id_to_V[edge.source]].x, g[id_to_V[edge.source]].y,
-		g[id_to_V[edge.target]].x, g[id_to_V[edge.target]].y,
-		level
-		);
-	}
+	assert(path.size()==2);
+	
+	add_edge_to_graph(lg, id_to_V_l, id_to_E_l, -1,
+		path[0], path[1], 1.000, 
+		g[id_to_V[path[0]]].x, g[id_to_V[path[0]]].y,
+		g[id_to_V[path[1]]].x, g[id_to_V[path[1]]].y,
+		level );
 }
 
 
 
-void add_path_edges_to_result(GGraph& g, 
+void add_path_edges_to_result(
+	//GGraph& g, 
 	GGraph& lg, 
-	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+	//std::map<long int, GGraph::vertex_descriptor>& id_to_V,
 	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
-	std::map<long int, GGraph::edge_descriptor>& id_to_E_l,
+	//std::map<long int, GGraph::edge_descriptor>& id_to_E_l,
 	std::vector<long int>& path, 
-	std::vector<PromotedEdge>& promoted_edges, int level) {
+	std::vector<Connection>& connections, int level) {
 	//std::cout << "Adding path edges to result..." << std::endl;
-	long int source, target;
-	EdgeG edge;
-	PromotedEdge p_edge;
-	for (int i = 0; i < path.size(); ++i) {
-		edge = get_edge(lg, id_to_V_l, 
-			//id_to_E_l,
-			path[i], path[i+1]);
-		if (edge.source == -1) {
-			edge = get_edge(g, id_to_V, 
+	Connection c;
+	assert(path.size()==2);
+
+
+	EdgeG edge = get_edge(lg, id_to_V_l, 
 				//id_to_E,
-				path[i], path[i+1]);
-			if (edge.source != edge.target) {
-				p_edge.id = edge.id;
-				p_edge.source = edge.source;
-				p_edge.target = edge.target;
-				p_edge.level = level;
-				promoted_edges.push_back(p_edge);
-			}	
+			path[0], path[1]);
+	if (edge.source == -1) {
+		c.source = path[0];
+		c.target = path[1];
+		c.level = level;
+		connections.push_back(c);
 	}
-}
+
 }
 
 
@@ -513,7 +502,7 @@ void update_graph_with_path(GGraph& g, GGraph& lg,
 	std::map<long int, GGraph::edge_descriptor>& id_to_E_l,
 	//std::map<long int, std::set<long int> >& comp_vertices,
 	std::map<long int, mpoint_t>& comp_geometries,
-	std::vector<PromotedEdge>& promoted_edges,
+	std::vector<Connection>& promoted_edges,
 	long int s_id, long int t_id,
 	bg::model::box<point_t>& bbox, int level) {
 
@@ -534,6 +523,7 @@ void update_graph_with_path(GGraph& g, GGraph& lg,
 	V_g bg_s = id_to_V_b[s_id];
 	V_g bg_t = id_to_V_b[t_id];
 
+	#if 0
 	// Double the bounding box until path is found
 	while (!get_astar_path(bg, bg_s, bg_t, path)) {
 		//print_geom_graph(bg);
@@ -544,6 +534,9 @@ void update_graph_with_path(GGraph& g, GGraph& lg,
 			id_to_V_b, id_to_E_b,
 			bbox);
 	}
+	#endif
+	path.push_back(s_id);
+	path.push_back(t_id);
 	/*
 	std::cout << "Path " << std::endl;
 	for (int j = 0; j < path.size(); ++j) {
@@ -552,12 +545,17 @@ void update_graph_with_path(GGraph& g, GGraph& lg,
 	std::cout << std::endl;
 	*/
 	
+	
 
 	// Add the edges of path to the result
-	add_path_edges_to_result(g, lg,
-		id_to_V, 
+
+	add_path_edges_to_result(
+		//g, 
+		lg,
+		//id_to_V, 
 		//id_to_E,
-		id_to_V_l, id_to_E_l,
+		id_to_V_l, 
+		//id_to_E_l,
 		path, promoted_edges, level);
 
 	//std::cout << "Path size: " << path.size() << std::endl;
@@ -576,9 +574,13 @@ void update_graph_with_path(GGraph& g, GGraph& lg,
 
 
 	// Add path at this level
-	add_path_at_level(g, lg, id_to_V, 
+	add_path_at_level(
+		g, 
+		lg, 
+		id_to_V, 
 		//id_to_E,
-		id_to_V_l, id_to_E_l,
+		id_to_V_l, 
+		id_to_E_l,
 		path, level);
 
 
@@ -706,16 +708,16 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 	std::map<long int, GGraph::edge_descriptor>& id_to_E_l,
 	std::map<long int, std::set<long int> >& comp_vertices,
 	std::map<long int, mpoint_t >& comp_geometries,
-	std::vector<PromotedEdge>& promoted_edges, int level) {
+	std::vector<Connection>& promoted_edges, int level) {
 
 	int nearest_comp;
 	bg::model::box<point_t> bbox;
 	long int s_id, t_id;
 	while(comp_geometries.size() != 1) {
-		/*
-		std::cout << "Level Graph before" << std::endl;
-		print_geom_graph(lg);
-		*/
+		
+		//std::cout << "Level Graph before" << std::endl;
+		//print_geom_graph(lg);
+		
 		/*
 		std::cout << "components: " << std::endl;
 		print_vertex_components(lg, components);
@@ -749,7 +751,7 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 		s_id = *(comp_vertices[0].begin());
 		t_id = *(comp_vertices[nearest_comp].begin());
 
-
+		#if 1
 		//Obtain the square bbox with enclosure starting from source,target
 		//std::cout << "Fetching bbox" << std::endl;
 		get_bbox(point_t(lg[id_to_V_l[s_id]].x, lg[id_to_V_l[s_id]].y), 
@@ -760,7 +762,9 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 	
 		//std::cout << "Updating based on path" << std::endl;
 		// Adds path from source to target
-		update_graph_with_path(g, lg,
+		update_graph_with_path(
+			g, 
+			lg,
 			id_to_V, 
 			//id_to_E,
 			id_to_V_l, id_to_E_l,
@@ -771,7 +775,9 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 
 		
 		// Adds path from target to source
-		update_graph_with_path(g, lg,	
+		update_graph_with_path(
+			g, 
+			lg,	
 			id_to_V, 
 			//id_to_E,
 			id_to_V_l, id_to_E_l,
@@ -796,7 +802,7 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 		comp_vertices[0].insert(comp_vertices[nearest_comp].begin(),
 			comp_vertices[nearest_comp].end());
 		comp_vertices.erase(nearest_comp);
-
+		#endif
 
 	}
 
@@ -819,7 +825,7 @@ void strong_connect_components(GGraph& g, GGraph& lg,
 	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
 	std::map<long int, GGraph::edge_descriptor>& id_to_E_l, 
-	std::vector<PromotedEdge>& promoted_edges, int level) {
+	std::vector<Connection>& promoted_edges, int level) {
 
 
 	// Obtain the graph at a particular level
@@ -870,7 +876,7 @@ void strong_connect_components_levels(GGraph& g, GGraph& lg,
 	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
 	std::map<long int, GGraph::edge_descriptor>& id_to_E_l, 
-	std::vector<PromotedEdge>& promoted_edges, int max_level) {
+	std::vector<Connection>& promoted_edges, int max_level) {
 
 	for (int i = 1; i <= max_level; ++i) {
 		std::cout << "Level: " << i << std::endl;
