@@ -51,7 +51,7 @@ int main(int argc, char const *argv[])
 		<< std::endl;
 		*/
 		std::cout 
-		<< ", " << Connection[i].source
+		<< Connection[i].source
 		<< ", " << Connection[i].target
 		<< ", " << Connection[i].level
 		<< std::endl;

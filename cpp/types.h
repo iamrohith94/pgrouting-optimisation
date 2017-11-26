@@ -28,6 +28,11 @@ struct VertexG {
 	long int id;
 	double x;
 	double y;
+	template <typename Ar> void serialize(Ar& ar, unsigned) { 
+		ar & id; 
+		ar & x; 
+		ar & y; 
+	}
 };
 
 struct EdgeG {
@@ -37,6 +42,15 @@ struct EdgeG {
 	long int target;
 	double weight;
 	int level;
+
+	template <typename Ar> void serialize(Ar& ar, unsigned) { 
+	ar & id;
+	ar & idx;
+	ar & source;
+	ar & target;
+	ar & weight;
+	ar & level; 
+	}
 };
 
 struct PromotedEdge {
