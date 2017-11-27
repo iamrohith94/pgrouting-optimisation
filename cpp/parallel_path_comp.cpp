@@ -128,8 +128,7 @@ int main(int argc, char *argv[])
 	std::vector<Connection> connections;
 	get_process_connections("./data/"+connections_file_name+".csv", connections, world.rank(), world.size(), ',');
 
-	std::cout << connections.size()
-	<< ", " << world.rank() << std::endl;
+	//std::cout << connections.size() << ", " << world.rank() << std::endl;
 	for (int i = 0; i < connections.size(); ++i) {
 		
 		get_connection_edges(g,
@@ -151,8 +150,9 @@ int main(int argc, char *argv[])
 		std::cout << promoted_edges[i].id << ", "
 		<< promoted_edges[i].source << ", "
 		<< promoted_edges[i].target << ", "
-		<< promoted_edges[i].level 
-		<< ", " << world.rank() << std::endl;
+		<< promoted_edges[i].level
+		<< std::endl; 
+		//<< ", " << world.rank() << std::endl;
 	}
 	
 	return 0;

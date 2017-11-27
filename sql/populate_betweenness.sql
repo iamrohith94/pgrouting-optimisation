@@ -1,3 +1,5 @@
+
+DROP TABLE IF EXISTS tmp; -- else it is dropped at end of session automatically
 CREATE TEMP TABLE tmp (
 
    id                BIGINT                  NOT NULL,
@@ -7,7 +9,7 @@ CREATE TEMP TABLE tmp (
    level             INTEGER
 );
 
-COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/out_chandigarh_cars_contracted_columns.csv' delimiter ',' csv;
+COPY tmp FROM '/home/rohithreddy/mystuff/research/pgrouting-optimisation/data/out_sample_data_contracted_columns.csv' delimiter ',' csv;
 CREATE INDEX results_index ON tmp(id, source, target);
 
 UPDATE cleaned_ways
