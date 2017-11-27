@@ -15,7 +15,7 @@ int main(int argc, char const *argv[])
 	if (argc == 3)
 		num_levels = std::atoi(argv[2]);
 	else
-		num_levels = 1;
+		num_levels = 10;
 
 
 	std::map<long int, GGraph::vertex_descriptor> id_to_V;
@@ -30,7 +30,8 @@ int main(int argc, char const *argv[])
 
 	//std::cout << "Original Graph: " << std::endl;
 	//print_geom_graph(g);
-
+	std::cout << "Num of edges: " << num_edges(g) << std::endl;
+	std::cout << "Num of vertices: " << num_vertices(g) << std::endl;
 	GGraph lg;
 	std::map<long int, GGraph::vertex_descriptor> id_to_V_l;
 	std::map<long int, GGraph::edge_descriptor> id_to_E_l;

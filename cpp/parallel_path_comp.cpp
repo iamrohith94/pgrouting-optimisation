@@ -122,12 +122,13 @@ int main(int argc, char *argv[])
 		ia >> g;
 		ia >> id_to_E;
 		ia >> id_to_V;
+		//std::cout << "Received graph by " << world.rank() << std::endl;
 	}
 
 	std::vector<PromotedEdge> promoted_edges;
 	std::vector<Connection> connections;
 	get_process_connections("./data/"+connections_file_name+".csv", connections, world.rank(), world.size(), ',');
-
+	//std::cout << "Received connnections by " << world.rank() << std::endl;
 	//std::cout << connections.size() << ", " << world.rank() << std::endl;
 	for (int i = 0; i < connections.size(); ++i) {
 		
@@ -137,14 +138,14 @@ int main(int argc, char *argv[])
 			connections[i].target, 
 			promoted_edges, 
 			connections[i].level);
-		/*
+	/*	
 		std::cout << connections[i].source 
 		<< ", " << connections[i].target
 		<< ", " << connections[i].level
 		<< ", " << world.rank() << std::endl;
-		*/
+	*/	
 	}
-	
+	//std::cout << "Computed connnection edges by " << world.rank() << std::endl;	
 	//std::cout << "Promoted edges of Process " << world.rank() << std::endl;
 	for (int i = 0; i < promoted_edges.size(); ++i) {
 		std::cout << promoted_edges[i].id << ", "

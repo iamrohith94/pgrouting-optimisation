@@ -107,11 +107,11 @@ WHERE cleaned_ways_vertices_pgr.id = ways_vertices_pgr.id;
 INSERT INTO cleaned_ways(id, source, target, cost, x1, y1, x2, y2, the_geom)
 SELECT gid as id, source, target, cost, x1, y1, x2, y2, the_geom FROM ways WHERE cost > 0 
 AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN 
-(SELECT id FROM cleaned_ways_vertices_pgr)
+(SELECT id FROM cleaned_ways_vertices_pgr) AND source != target
 UNION ALL 
 SELECT gid as id, target, source, reverse_cost, x2, y2, x1, y1, the_geom FROM ways WHERE reverse_cost > 0
 AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN 
-(SELECT id FROM cleaned_ways_vertices_pgr);
+(SELECT id FROM cleaned_ways_vertices_pgr) AND source != target;
 
 
 /*Generating contraction results for vertices*/
