@@ -496,9 +496,11 @@ void get_graph_at_level(GGraph& g, GGraph& lg,
 
 			source = g[*out].source;
 			target = g[*out].target;
+			/*
 			if(source == 10416 or target == 10416) {
 				std::cout << 10416 << "level: " << g[*out].level << std::endl;
 			}
+			*/
 			edge = get_edge(lg, id_to_V_l, 
 				//id_to_E_l,
 				source, target);
@@ -840,11 +842,11 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 		//std::cout << "Level Graph before" << std::endl;
 		//print_geom_graph(lg);
 		
-		std::cout << "num components: " << comp_vertices.size() << std::endl;
+		//std::cout << "num components: " << comp_vertices.size() << std::endl;
 		nearest_comp = get_random_comp(comp_vertices);
 		
 		//std::cout << "nearest component to comp 0" << std::endl;
-		std::cout << "nearest_comp_id: " << nearest_comp << std::endl;
+		//std::cout << "nearest_comp_id: " << nearest_comp << std::endl;
 		//std::cout << "geom: " << bg::dsv(comp_geometries[nearest_comp]) << std::endl;
 		if (nearest_comp == -1 || nearest_comp == 0) {
 			std::cout << "Error finding nearest_comp" << std::endl;
@@ -868,7 +870,7 @@ void _strong_connect_components(GGraph& g, GGraph& lg,
 			point_t(lg[id_to_V_l[t_id]].x, lg[id_to_V_l[t_id]].y),
 			bbox);
 
-		std::cout << "s: " << s_id << ", t: " << t_id << std::endl;
+		//std::cout << "s: " << s_id << ", t: " << t_id << std::endl;
 	
 		//std::cout << "Updating based on path" << std::endl;
 		// Adds path from source to target
@@ -955,11 +957,12 @@ void strong_connect_components(GGraph& g, GGraph& lg,
 	std::map<long int, std::set<long int> > comp_vertices;
 
 	get_comp_vertices(lg, components, comp_vertices);
-
+	/*
 	if(level == 4) {
 		std::cout << "components_vertices: " << std::endl;
 		print_comp_vertices(comp_vertices);
 	}
+	*/
 	
 	// Compute geometry of components
 	//get_comp_geom(lg, components, comp_geometries);
@@ -987,7 +990,7 @@ void strong_connect_components_levels(GGraph& g, GGraph& lg,
 	std::vector<Connection>& promoted_edges, int max_level) {
 
 	for (int i = 1; i <= max_level; ++i) {
-		std::cout << "Level: " << i << std::endl;
+		//std::cout << "Level: " << i << std::endl;
 		strong_connect_components(g, lg, 
 			id_to_V, 
 			//id_to_E, 
