@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 	//std::cout << connections.size() << ", " << world.rank() << std::endl;
 	for (int i = 0; i < connections.size(); ++i) {
 		
-		get_connection_edges(g,
+		get_connecting_edges(g,
 			id_to_V,
 			connections[i].source, 
 			connections[i].target, 
