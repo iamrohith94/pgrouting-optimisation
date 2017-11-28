@@ -65,3 +65,10 @@ struct Connection {
 	long int target;
 	int level;
 };
+
+struct Shortcut {
+	long int source;
+	long int target;
+	double cost;
+	double reverse_cost;
+};

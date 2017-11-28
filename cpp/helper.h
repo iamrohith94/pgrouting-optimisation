@@ -61,6 +61,79 @@ void print_graph(G &g) {
 
 
 
+bool get_edge(Graph &g,
+        std::map<long int, Graph::vertex_descriptor>& id_to_V,
+        //std::map<long int, GGraph::edge_descriptor>& id_to_E,
+        long int eid, long int source, long int target, double cost) {
+	EO_i_g out, out_end;
+	if (id_to_V.find(source) == id_to_V.end() || id_to_V.find(target) == id_to_V.end()) {
+                return false;
+        }
+        else {
+                for (boost::tie(out, out_end) = out_edges(id_to_V[source], g);
+                        out != out_end; ++out) {
+                        if (g[*out].target == target && g[*out].id == eid && g[*out].weight == cost) {
+                                return true;
+                        }
+                }
+        }
+
+        return false;
+
+
+
+}
+
+/*
+Adds an edge to graph g and updates its maps accordingly
+*/
+
+void add_edge_to_graph(Graph& g, 
+	std::map<long int, Graph::vertex_descriptor>& id_to_V,
+	std::map<long int, Graph::edge_descriptor>& id_to_E,
+	long int eid, long int source,long int target, double weight, int level) {
+
+	if(get_edge(g, id_to_V, 
+		eid,
+		source, target, weight))
+		return;
+
+	std::pair<GGraph::edge_descriptor, bool> p;
+	if (id_to_V.find(source) == id_to_V.end()) {
+		//std::cout << "Adding vertex " <<  source << std::endl;
+		//std::cout << "x: " << x_1 << ", y: " << y_1 << std::endl;
+		id_to_V[source] = boost::add_vertex(g);
+		g[id_to_V[source]].id = source;
+		g[id_to_V[source]].x = x_1;
+		g[id_to_V[source]].y = y_1;
+	}
+	if (id_to_V.find(target) == id_to_V.end()) {
+		//std::cout << "Adding vertex " <<  target << std::endl;
+		id_to_V[target] = boost::add_vertex(g);
+		g[id_to_V[target]].id = target;
+		g[id_to_V[target]].x = x_2;
+		g[id_to_V[target]].y = y_2;
+
+		//std::cout << "x: " << g[id_to_V[target]].x << ", y: " << g[id_to_V[target]].y << std::endl;
+	}
+	if (weight >= 0.00000) {
+		
+		p = boost::add_edge(id_to_V[source], id_to_V[target], g);
+		g[p.first].weight = weight;
+		g[p.first].source = source;
+		g[p.first].target = target;
+		g[p.first].idx = id_to_E.size();
+		id_to_E[g[p.first].idx] = p.first;
+		g[p.first].id = eid;
+		g[p.first].level = level;
+	}
+
+	//std::cout << "added :)" << std::endl;
+
+}
+
+
+
 
 int construct_graph_from_file(std::string file_name, const char delimiter, Graph &g, std::map<long int,
 	Graph::vertex_descriptor>& id_to_V,

@@ -24,8 +24,8 @@ typedef  boost::graph_traits < GGraph >::edge_descriptor E_g;
 typedef  boost::graph_traits < GGraph >::vertex_iterator V_i_g;
 typedef  boost::graph_traits < GGraph >::edge_iterator E_i_g;
 typedef boost::graph_traits < GGraph >::out_edge_iterator EO_i_g;
-typedef boost::graph_traits < GGraph >::in_edge_iterator IO_i_g;
-
+typedef boost::graph_traits < GGraph >::in_edge_iterator EI_i_g;
+typedef std::map<long int, std::set<long int> > ComponentVertices;
 
 
 
@@ -77,16 +77,6 @@ void print_vertex_components(GGraph g, std::vector<long int> components) {
 }
 
 /*
-Prints the component id and its geometry
-*/
-void print_comp_geometries(std::map<long int, mpoint_t>& comp_geometries) {
-	std::map<long int, mpoint_t>::iterator it;
-	for (it = comp_geometries.begin(); it != comp_geometries.end(); ++it) {
-		std::cout << "comp: " << it->first << ", geom: " << bg::dsv(comp_geometries[it->first]) << std::endl;
-	}
-}
-
-/*
  * Prints the component id and its vertices
  * */
 void print_comp_vertices(std::map<long int, std::set<long int> >& comp_vertices) {
@@ -100,74 +90,6 @@ void print_comp_vertices(std::map<long int, std::set<long int> >& comp_vertices)
 		std::cout << std::endl;
         }
 }
-
-/* 
-Input:
-comp_1 : component id
-comp_geometries: A vector of geometries of components
-comp_geometry[comp_1]: Geometry of comp_1
-Function:
-This function calculates the nearest component to comp_1
-using the geometries of components
-Output:
-Id of the nearest component to comp_1
-*/
-
-int get_closest_comp(int comp_1, std::map<long int, mpoint_t>& comp_geometries) {
-	//std::cout << "comp_geometries_size: " << comp_geometries.size()  << std::endl;
-	std::map<long int, mpoint_t>::iterator it;
-	mpoint_t comp_geom = comp_geometries[comp_1];
-	long int nearest_comp = -1, temp_comp;
-	int count = 1;
-	double min_dist = std::numeric_limits<double>::max(), temp_dist;
-	for (it = comp_geometries.begin(); it != comp_geometries.end(); ++it) {
-		//std::cout << "count: " << count++  << std::endl;
-		temp_comp = it->first;
-		//std::cout << "temp_comp: "<< temp_comp  << std::endl;
-		temp_dist = bg::distance(comp_geometries[comp_1], 
-			comp_geometries[temp_comp]);
-		//std::cout << "temp_dist: "<< temp_dist  << std::endl;
-		if (temp_comp != comp_1 && (temp_dist - min_dist)<= 0.000000000001) {
-			//std::cout << "yay" << std::endl;
-			nearest_comp = temp_comp;
-			//std::cout << "temp_comp: " << temp_comp << std::endl;
-			//std::cout << "temp_comp_geom: " << bg::dsv(comp_geometries[temp_comp]) << std::endl;
-			//std::cout << "comp1_geom: " << bg::dsv(comp_geometries[comp_1]) << std::endl;
-			min_dist = temp_dist;
-
-			//std::cout << "min_dist: " << min_dist << std::endl;
-	}
-}
-//std::cout << "done with this" << std::endl;
-return nearest_comp;
-}
-
-/*
-Input
-g : Graph
-components: components[i] is the id of component containing vertex i
-Function:
-Calculate the multi point geometries of all components from the point 
-geometry of points in them
-Output:
-A vector of multi_point geometries
-
-*/
-
-void get_comp_geom(GGraph& g, std::vector<long int> components, std::map<long int, mpoint_t>& comp_geometries) {
-	V_i_g vi;
-	//comp_geometries.resize(components.size());
-	for (vi = boost::vertices(g).first;
-		vi != boost::vertices(g).second; ++vi) {
-		//std::cout << "id: " << g[*vi].id << ", component: " << components[*vi] << std::endl;
-		if (comp_geometries.find(components[*vi]) == comp_geometries.end()) {
-			comp_geometries[components[*vi]] = mpoint_t(); 
-		}
-		bg::append(comp_geometries[components[*vi]], point_t(g[*vi].x, g[*vi].y));
-}
-}
-
-
 
 /*
 Input: A bounding box
@@ -221,16 +143,6 @@ void get_bbox(point_t p1, point_t p2, bg::model::box<point_t>& bbox) {
 	get_square_bbox(bbox);
 }
 
-#if 0
-void get_bbox(GGraph& lg, std::vector<int> components, V_g source, V_g target, 
-	bg::model::box<point_t>& bbox) {
-	mpoint_t source_comp, target_comp, total_comp;
-	int source_comp_id, target_comp_id;
-	get_comp_geom(lg, components, source, source_comp);
-	get_comp_geom(lg, components, target, target_comp);
-	//get_bbox(source_comp, target_comp, bbox);
-}
-#endif
 
 
 /*
@@ -365,6 +277,26 @@ bool get_astar_edges(GGraph& g,
 }
 
 
+/*
+Adds an edge to graph g and updates its maps accordingly
+*/
+
+void add_vertex_to_graph(GGraph& g, 
+	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+	long int vid,
+	double x, double y) {
+
+	if (id_to_V.find(vid) == id_to_V.end()) {
+		//std::cout << "Adding vertex " <<  source << std::endl;
+		//std::cout << "x: " << x_1 << ", y: " << y_1 << std::endl;
+		id_to_V[vid] = boost::add_vertex(g);
+		g[id_to_V[vid]].id = vid;
+		g[id_to_V[vid]].x = x;
+		g[id_to_V[vid]].y = y;
+	}
+
+}
+
 
 /*
 Adds an edge to graph g and updates its maps accordingly
@@ -383,23 +315,8 @@ void add_edge_to_graph(GGraph& g,
 		return;
 
 	std::pair<GGraph::edge_descriptor, bool> p;
-	if (id_to_V.find(source) == id_to_V.end()) {
-		//std::cout << "Adding vertex " <<  source << std::endl;
-		//std::cout << "x: " << x_1 << ", y: " << y_1 << std::endl;
-		id_to_V[source] = boost::add_vertex(g);
-		g[id_to_V[source]].id = source;
-		g[id_to_V[source]].x = x_1;
-		g[id_to_V[source]].y = y_1;
-	}
-	if (id_to_V.find(target) == id_to_V.end()) {
-		//std::cout << "Adding vertex " <<  target << std::endl;
-		id_to_V[target] = boost::add_vertex(g);
-		g[id_to_V[target]].id = target;
-		g[id_to_V[target]].x = x_2;
-		g[id_to_V[target]].y = y_2;
-
-		//std::cout << "x: " << g[id_to_V[target]].x << ", y: " << g[id_to_V[target]].y << std::endl;
-	}
+	add_vertex_to_graph(g, id_to_V, source, x_1, y_1);
+	add_vertex_to_graph(g, id_to_V, target, x_2, y_2);
 	if (weight >= 0.00000) {
 		
 		p = boost::add_edge(id_to_V[source], id_to_V[target], g);
@@ -476,7 +393,6 @@ Adds all the edges of a level from g to lg
 */
 void get_graph_at_level(GGraph& g, GGraph& lg, 
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
-	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
 	std::map<long int, GGraph::edge_descriptor>& id_to_E_l, int level) {
 
@@ -533,7 +449,7 @@ void get_bounding_graph(GGraph& g, GGraph& bg,
 	//std::cout << "polygon geom: " 
 	//<< bg::dsv(b_polygon) << std::endl;
 	V_i_g vi;
-	IO_i_g in, in_end;
+	EI_i_g in, in_end;
 	EO_i_g out, out_end;
 	long int edge_count = 0, source, target;
 	std::pair<GGraph::edge_descriptor, bool> p;
@@ -826,7 +742,7 @@ int get_random_comp(
 }	
 
 
-
+#if 0
 void _strong_connect_components(GGraph& g, GGraph& lg, 
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
@@ -927,7 +843,6 @@ void get_comp_vertices(GGraph& g,
 	}
 }
 
-#if 1
 void strong_connect_components(GGraph& g, GGraph& lg, 
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
 	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
@@ -982,26 +897,181 @@ void strong_connect_components(GGraph& g, GGraph& lg,
 #endif
 
 
-void strong_connect_components_levels(GGraph& g, GGraph& lg, 
-	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
-	//std::map<long int, GGraph::edge_descriptor>& id_to_E,
-	std::map<long int, GGraph::vertex_descriptor>& id_to_V_l,
-	std::map<long int, GGraph::edge_descriptor>& id_to_E_l, 
-	std::vector<Connection>& promoted_edges, int max_level) {
+void makeStronglyConnected(GGraph &g,
+		std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+        ComponentVertices &component_vertices, 
+        std::vector<Connection>& connections,
+        int level) {
+	size_t totalNodes = num_vertices(g);
+	std::vector< long int > components(totalNodes);
+	//Finding connected components
+    int num_comps;
+    Connection temp;
 
+    //print_geom_graph(g);
+    num_comps =  boost::strong_components(g,
+        boost::make_iterator_property_map(components.begin(),
+                                          get(boost::vertex_index,
+                                              g)));
+    //std::cout << "Initial connected components: " << num_comps << std::endl;
+    //std::cout << "Initial num vertices: " << totalNodes << std::endl;
+    
+    if (num_comps == 1) {
+        return ;
+    }
+    ComponentVertices temp_component_vertices;
+    //std::vector< VertexProperties > DAG_vertices(num_comps);
+
+    /* Storing the vids of the components*/  
+    for (size_t i = 0; i < totalNodes; i++) {
+        temp_component_vertices[components[i]].
+        insert(component_vertices[i].begin(), component_vertices[i].end());
+    }
+    
+
+    GGraph DAG;
+    std::map<long int, GGraph::vertex_descriptor> id_to_V_DAG;
+    std::map<long int, GGraph::edge_descriptor> id_to_E_DAG;
+    /* Adding the component ids to the DAG vertices */
+    for (size_t i = 0; i < num_comps; i++) {
+        add_vertex_to_graph(DAG, id_to_V_DAG, i, -1.00, -1.00);
+    }
+
+    //Add edges to DAG
+    for (auto eit = boost::edges(g).first; 
+                        eit != boost::edges(g).second; ++eit) {
+        V_g s, t;
+        s = id_to_V[g[*eit].source];
+        t = id_to_V[g[*eit].target];
+        if (components[s] != components[t]) {
+            add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+            	boost::num_edges(DAG), components[s], components[t], g[*eit].weight,
+				g[s].x, g[s].y,
+				g[t].x, g[t].y,
+				level);
+        }
+    }
+    long int curr_vid, from_comp_id, to_comp_id;
+    Shortcut s;
+    //Compute Connections
+    for (auto vi = vertices(DAG).first;
+                        vi != vertices(DAG).second; ++vi) {
+
+    	curr_vid = DAG[*vi].id;
+    	if (boost::in_degree(*vi, DAG) != 0 && boost::out_degree(*vi, DAG) != 0) {
+            continue;
+        }
+        
+        if (boost::in_degree(*vi, DAG) == 0 && boost::out_degree(*vi, DAG) == 0) {
+            from_comp_id = curr_vid;
+            to_comp_id = (curr_vid +1)%num_vertices(DAG); 
+            //add edge to DAG
+            s.cost = 1;
+            s.reverse_cost = 1;
+        }
+        else if(boost::out_degree(*vi, DAG) == 0) {
+            from_comp_id = curr_vid;
+            EI_i_g eit, eit_end;
+            boost::tie(eit, eit_end) = in_edges(*vi, DAG);
+            to_comp_id = DAG[source(*eit, DAG)].id;
+            //add edge to DAG
+            s.cost = 1;
+            s.reverse_cost = -1;
+        }
+
+        else {
+            EO_i_g eit, eit_end;
+            boost::tie(eit, eit_end) = out_edges(*vi, DAG);
+            from_comp_id = DAG[target(*eit, DAG)].id;
+            to_comp_id = curr_vid;
+            //add edge to DAG
+            s.cost = 1;
+            s.reverse_cost = -1;
+        }
+        s.source = from_comp_id;
+        s.target = to_comp_id;
+
+        if (s.cost > 0) {
+        
+	        temp.source = *(temp_component_vertices[from_comp_id].begin());
+	        temp.target = *(temp_component_vertices[to_comp_id].begin());
+	        temp.level = level;
+	        /*
+	        std::cout << "s: " << temp.source << ", "
+	        << "t: " << temp.target << ", "
+	        <<  ", level: " << level << std::endl; 
+            */
+	        connections.push_back(temp);
+	        add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+	            	boost::num_edges(DAG), s.source, s.target, s.cost,
+					-1.000, -1.000,
+					-1.000, -1.000,
+					level);
+        }
+
+        if (s.reverse_cost > 0) {
+	        temp.source = *(temp_component_vertices[to_comp_id].begin());
+	        temp.target = *(temp_component_vertices[from_comp_id].begin());
+	        temp.level = level;
+	        /*
+	        std::cout << "s: " << temp.target << ", "
+	        << "t: " << temp.source << ", "
+	        <<  ", level: " << level << std::endl; 
+	        */
+	        connections.push_back(temp);
+
+	        add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+	            	boost::num_edges(DAG), s.target, s.source, s.reverse_cost,
+					-1.000, -1.000,
+					-1.000, -1.000,
+					level);
+        }
+    }
+
+    //makeStronglyConnected(DAG, id_to_V_DAG, temp_component_vertices, connections, level);  
+}
+
+
+void get_connections_at_level(GGraph &g, 
+	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+        std::vector<Connection>& connections,
+        int level) {
+
+	ComponentVertices comp_vertices;
+	for (auto vi = vertices(g).first;
+	                   vi != vertices(g).second; ++vi) {
+	       comp_vertices[*vi].insert(g[*vi].id);
+	}
+	makeStronglyConnected(g, id_to_V, comp_vertices, connections, level);   
+}
+
+
+
+void get_connections_at_levels(GGraph& g, 
+	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+	std::vector<Connection>& connections, int max_level) {
+
+	GGraph lg;
+	std::map<long int, GGraph::vertex_descriptor> id_to_V_l;
+	std::map<long int, GGraph::edge_descriptor> id_to_E_l;
 	for (int i = 1; i <= max_level; ++i) {
+		std::vector<Connection> temp_connections;
 		//std::cout << "Level: " << i << std::endl;
-		strong_connect_components(g, lg, 
-			id_to_V, 
-			//id_to_E, 
-			id_to_V_l, id_to_E_l, 
-			promoted_edges, i);
-		
-		std::vector<long int> components(num_vertices(lg));
-		int num_comps = boost::strong_components(lg, 
-			boost::make_iterator_property_map(components.begin(), get(boost::vertex_index, lg)));
-		assert(num_comps == 1);
-		
-		
+		get_graph_at_level(g, lg, id_to_V,
+			id_to_V_l, id_to_E_l, i);
+
+		get_connections_at_level(lg, 
+			id_to_V_l, 
+			temp_connections, i);
+
+		for (int j = 0; j < temp_connections.size(); ++j) {
+			add_edge_to_graph(lg, id_to_V_l, id_to_E_l, 
+				boost::num_edges(lg), temp_connections[j].source, 
+				temp_connections[j].target, 1.00,
+					-1.000, -1.000,
+					-1.000, -1.000,
+					i);
+		}
+		connections.insert( connections.end(), temp_connections.begin(), temp_connections.end() );
 	}
 }
