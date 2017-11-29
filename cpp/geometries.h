@@ -496,7 +496,6 @@ void get_connecting_edges(GGraph& g,
 	bg::model::box<point_t> bbox;
 	
 	//Generating bbox 
-	
 	get_bbox(point_t(g[id_to_V[s_id]].x, g[id_to_V[s_id]].y), 
 		point_t(g[id_to_V[t_id]].x, g[id_to_V[t_id]].y),
 		bbox);
