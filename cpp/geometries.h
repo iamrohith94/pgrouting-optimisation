@@ -5,12 +5,14 @@
 #include <boost/geometry/multi/geometries/multi_point.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/index/rtree.hpp>
 
 #include <boost/graph/strong_components.hpp>
 #include <fstream>
 #include "astar.h"
 
 namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index; 
 
 typedef bg::cs::cartesian geometry_type;  
 typedef bg::model::point<double, 2, geometry_type> point_t;
@@ -26,7 +28,13 @@ typedef  boost::graph_traits < GGraph >::edge_iterator E_i_g;
 typedef boost::graph_traits < GGraph >::out_edge_iterator EO_i_g;
 typedef boost::graph_traits < GGraph >::in_edge_iterator EI_i_g;
 typedef std::map<long int, std::set<long int> > ComponentVertices;
-
+typedef std::map<long int, mpoint_t> ComponentMultiPoint;
+typedef std::map<long int, point_t> ComponentPoint;
+typedef std::map<long int, mpoint_t>::iterator CMP_I;
+typedef std::map<long int, point_t> ComponentPoint;
+typedef std::map<long int, point_t>::iterator CP_I;
+typedef std::pair<point_t, long int> Value;
+typedef bgi::rtree<Value, bgi::linear<32>  > RTree; 
 
 
 /* Prints the graph with geometrical attributes */
@@ -78,17 +86,17 @@ void print_vertex_components(GGraph g, std::vector<long int> components) {
 /*
  * Prints the component id and its vertices
  * */
-void print_comp_vertices(std::map<long int, std::set<long int> >& comp_vertices) {
-        std::map<long int, std::set<long int> >::iterator it;
-	std::set<long int>::iterator it_v;
-        for (it = comp_vertices.begin(); it != comp_vertices.end(); ++it) {
-                std::cout << "comp: " << it->first << std::endl;
-		for (it_v = it->second.begin(); it_v != it->second.end(); ++it_v) {
-			std::cout << *it_v << ", "  << std::endl;
-		}
-		std::cout << std::endl;
-        }
-}
+ void print_comp_vertices(std::map<long int, std::set<long int> >& comp_vertices) {
+ 	std::map<long int, std::set<long int> >::iterator it;
+ 	std::set<long int>::iterator it_v;
+ 	for (it = comp_vertices.begin(); it != comp_vertices.end(); ++it) {
+ 		std::cout << "comp: " << it->first << std::endl;
+ 		for (it_v = it->second.begin(); it_v != it->second.end(); ++it_v) {
+ 			std::cout << *it_v << ", "  << std::endl;
+ 		}
+ 		std::cout << std::endl;
+ 	}
+ }
 
 /*
 Input: A bounding box
@@ -166,10 +174,10 @@ Output: Returns true if
 		2. Point on the polygon(boundary)
 
 */
-bool is_within_polygon(point_t p, polygon_t b_polygon) {
-	return bg::intersects(p, b_polygon)
-	|| bg::within(p, b_polygon);
-}
+		bool is_within_polygon(point_t p, polygon_t b_polygon) {
+			return bg::intersects(p, b_polygon)
+			|| bg::within(p, b_polygon);
+		}
 
 /*
 INput: source id and target id
@@ -199,23 +207,23 @@ EdgeG get_edge(GGraph &g,
 }
 
 bool get_edge(GGraph &g,
-        std::map<long int, GGraph::vertex_descriptor>& id_to_V,
-        //std::map<long int, GGraph::edge_descriptor>& id_to_E,
-        long int eid, long int source, long int target, double cost) {
+	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+		//std::map<long int, GGraph::edge_descriptor>& id_to_E,
+	long int eid, long int source, long int target, double cost) {
 	EO_i_g out, out_end;
 	if (id_to_V.find(source) == id_to_V.end() || id_to_V.find(target) == id_to_V.end()) {
-                return false;
-        }
-        else {
-                for (boost::tie(out, out_end) = out_edges(id_to_V[source], g);
-                        out != out_end; ++out) {
-                        if (g[*out].target == target && g[*out].id == eid && g[*out].weight == cost) {
-                                return true;
-                        }
-                }
-        }
+		return false;
+	}
+	else {
+		for (boost::tie(out, out_end) = out_edges(id_to_V[source], g);
+			out != out_end; ++out) {
+			if (g[*out].target == target && g[*out].id == eid && g[*out].weight == cost) {
+				return true;
+			}
+		}
+	}
 
-        return false;
+	return false;
 }
 
 
@@ -254,17 +262,17 @@ bool get_astar_edges(GGraph& g,
 	std::vector<PromotedEdge>& promoted_edges,
 	int level) {
 	long int source, target;
-		EdgeG edge;
-		PromotedEdge p_edge;
-		for (int i = 0; i < path.size()-1; ++i) {
-			edge = get_edge(g, id_to_V, 
-				path[i], path[i+1]);
-			assert(edge.source != -1);
-			p_edge.id = edge.id;
-			p_edge.source = edge.source;
-			p_edge.target = edge.target;
-			p_edge.level = level;
-			promoted_edges.push_back(p_edge);
+	EdgeG edge;
+	PromotedEdge p_edge;
+	for (int i = 0; i < path.size()-1; ++i) {
+		edge = get_edge(g, id_to_V, 
+			path[i], path[i+1]);
+		assert(edge.source != -1);
+		p_edge.id = edge.id;
+		p_edge.source = edge.source;
+		p_edge.target = edge.target;
+		p_edge.level = level;
+		promoted_edges.push_back(p_edge);
 	}
 	assert(promoted_edges[promoted_edges.size()-1].target == path[path.size()-1]);
 }
@@ -399,21 +407,21 @@ void get_graph_at_level(GGraph& g, GGraph& lg,
 			out != out_end; ++out) {
 
 			source = g[*out].source;
-			target = g[*out].target;
-			edge = get_edge(lg, id_to_V_l, 
-				source, target);
-			if (edge.source == -1) {
+		target = g[*out].target;
+		edge = get_edge(lg, id_to_V_l, 
+			source, target);
+		if (edge.source == -1) {
 
-				if (g[*out].level == level) {
-					add_edge_to_graph(lg, id_to_V_l, id_to_E_l,
-						g[*out].id, source, target, g[*out].weight,
-						g[id_to_V[source]].x, g[id_to_V[source]].y,
-						g[id_to_V[target]].x, g[id_to_V[target]].y,
-						g[*out].level);
-				}
+			if (g[*out].level == level) {
+				add_edge_to_graph(lg, id_to_V_l, id_to_E_l,
+					g[*out].id, source, target, g[*out].weight,
+					g[id_to_V[source]].x, g[id_to_V[source]].y,
+					g[id_to_V[target]].x, g[id_to_V[target]].y,
+					g[*out].level);
 			}
 		}
 	}
+}
 }
 
 /*
@@ -437,33 +445,33 @@ void get_bounding_graph(GGraph& g, GGraph& bg,
 	/* Adding vertices within the bbox */
 	for (vi = boost::vertices(g).first;
 		vi != boost::vertices(g).second; ++vi) {
-	if (is_within_polygon(point_t(g[*vi].x, g[*vi].y), b_polygon)) {
-		if (id_to_V_b.find(g[*vi].id) == id_to_V_b.end()) {
-			id_to_V_b[g[*vi].id] = boost::add_vertex(bg);
-			bg[id_to_V_b[g[*vi].id]].id = g[*vi].id;
-			bg[id_to_V_b[g[*vi].id]].x = g[*vi].x;
-			bg[id_to_V_b[g[*vi].id]].y = g[*vi].y;
-			remaining_vertices.insert(*vi);
+		if (is_within_polygon(point_t(g[*vi].x, g[*vi].y), b_polygon)) {
+			if (id_to_V_b.find(g[*vi].id) == id_to_V_b.end()) {
+				id_to_V_b[g[*vi].id] = boost::add_vertex(bg);
+				bg[id_to_V_b[g[*vi].id]].id = g[*vi].id;
+				bg[id_to_V_b[g[*vi].id]].x = g[*vi].x;
+				bg[id_to_V_b[g[*vi].id]].y = g[*vi].y;
+				remaining_vertices.insert(*vi);
+			}
 		}
 	}
-}
-V_g vi_g;
+	V_g vi_g;
 	/* Adding edges connected to these vertices */
-for (it = remaining_vertices.begin(); it != remaining_vertices.end(); ++it) {
-	vi_g = *it;
+	for (it = remaining_vertices.begin(); it != remaining_vertices.end(); ++it) {
+		vi_g = *it;
 
-	for (boost::tie(in, in_end) = in_edges(vi_g, g);
-		in != in_end; ++in) {
-		source = g[*in].source;
-	target = g[*in].target;
-	if (is_within_polygon(point_t(g[id_to_V[source]].x, g[id_to_V[source]].y), b_polygon)
-		&& is_within_polygon(point_t(g[id_to_V[target]].x, g[id_to_V[target]].y), b_polygon)) {
-		add_edge_to_graph(bg, id_to_V_b, id_to_E_b,
-			g[*in].id, source, target, g[*in].weight,
-			g[id_to_V[source]].x, g[id_to_V[source]].y,
-			g[id_to_V[target]].x, g[id_to_V[target]].y,
-			g[*in].level);
-}
+		for (boost::tie(in, in_end) = in_edges(vi_g, g);
+			in != in_end; ++in) {
+			source = g[*in].source;
+		target = g[*in].target;
+		if (is_within_polygon(point_t(g[id_to_V[source]].x, g[id_to_V[source]].y), b_polygon)
+			&& is_within_polygon(point_t(g[id_to_V[target]].x, g[id_to_V[target]].y), b_polygon)) {
+			add_edge_to_graph(bg, id_to_V_b, id_to_E_b,
+				g[*in].id, source, target, g[*in].weight,
+				g[id_to_V[source]].x, g[id_to_V[source]].y,
+				g[id_to_V[target]].x, g[id_to_V[target]].y,
+				g[*in].level);
+	}
 }
 for (boost::tie(out, out_end) = out_edges(vi_g, g);
 	out != out_end; ++out) {
@@ -533,153 +541,172 @@ void get_connecting_edges(GGraph& g,
 	get_astar_edges(bg, id_to_V_b, path, promoted_edges, level);
 }
 
+// Returns the closest point to p in rtree 
+long int get_closest_point(RTree &rtree, point_t p) {
+	std::vector<Value> returned_values;
+	rtree.query(bgi::nearest(p, 2), std::back_inserter(returned_values));
+	if (returned_values[0].first.get<0>() == p.get<0>()
+		&& returned_values[0].first.get<1>() == p.get<1>())
+		return returned_values[1].second;
+	else
+		return returned_values[0].second;	
+}
 
 
 void makeStronglyConnected(GGraph &g,
-		std::map<long int, GGraph::vertex_descriptor>& id_to_V,
-        ComponentVertices &component_vertices, 
-        std::vector<Connection>& connections,
-        int level) {
+	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
+	ComponentVertices &component_vertices,
+	std::vector<Connection>& connections,
+	int level) {
 	size_t totalNodes = num_vertices(g);
 	std::vector< long int > components(totalNodes);
 	//Finding connected components
-    int num_comps;
-    Connection temp;
+	int num_comps;
+	Connection temp;
 
-    //print_geom_graph(g);
-    num_comps =  boost::strong_components(g,
-        boost::make_iterator_property_map(components.begin(),
-                                          get(boost::vertex_index,
-                                              g)));
-    //std::cout << "Initial connected components: " << num_comps << std::endl;
-    //std::cout << "Initial num vertices: " << totalNodes << std::endl;
-    
-    if (num_comps == 1) {
-        return ;
-    }
-    ComponentVertices temp_component_vertices;
-    //std::vector< VertexProperties > DAG_vertices(num_comps);
+	//print_geom_graph(g);
+	num_comps =  boost::strong_components(g,
+		boost::make_iterator_property_map(components.begin(),
+			get(boost::vertex_index,
+				g)));
+	//std::cout << "Initial connected components: " << num_comps << std::endl;
+	//std::cout << "Initial num vertices: " << totalNodes << std::endl;
 
-    /* Storing the vids of the components*/  
-    for (size_t i = 0; i < totalNodes; i++) {
-        temp_component_vertices[components[i]].
-        insert(component_vertices[i].begin(), component_vertices[i].end());
-    }
-    
+	if (num_comps == 1) {
+		return ;
+	}
+	ComponentVertices temp_component_vertices;
+	ComponentMultiPoint temp_component_multipoint;
+	ComponentPoint temp_component_centroids;
+	//std::vector< VertexProperties > DAG_vertices(num_comps);
+	/* Storing the vids of the components and their geometries as multipoint*/  
+	for (size_t i = 0; i < totalNodes; i++) {
+		temp_component_vertices[components[i]].
+		insert(component_vertices[i].begin(), component_vertices[i].end());
+		bg::append(temp_component_multipoint[components[i]], 
+			point_t(g[i].x, g[i].y));
+	}
+	CMP_I it;
+	CP_I c_it;
+	//Compute the centroids for components
+	for (it = temp_component_multipoint.begin(); 
+		it != temp_component_multipoint.end(); ++it)
+		bg::centroid(it->second, temp_component_centroids[it->first]);
 
-    GGraph DAG;
-    std::map<long int, GGraph::vertex_descriptor> id_to_V_DAG;
-    std::map<long int, GGraph::edge_descriptor> id_to_E_DAG;
-    /* Adding the component ids to the DAG vertices */
-    for (size_t i = 0; i < num_comps; i++) {
-        add_vertex_to_graph(DAG, id_to_V_DAG, i, -1.00, -1.00);
-    }
 
-    //Add edges to DAG
-    for (auto eit = boost::edges(g).first; 
-                        eit != boost::edges(g).second; ++eit) {
-        V_g s, t;
-        s = id_to_V[g[*eit].source];
-        t = id_to_V[g[*eit].target];
-        if (components[s] != components[t]) {
-            add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
-            	boost::num_edges(DAG), components[s], components[t], g[*eit].weight,
-				g[s].x, g[s].y,
-				g[t].x, g[t].y,
+	//Construct an rtree with the centroids of components
+	RTree rtree; 
+	for (c_it = temp_component_centroids.begin(); 
+		c_it != temp_component_centroids.end(); ++c_it)
+		rtree.insert(std::make_pair(c_it->second, c_it->first));
+
+
+
+
+	GGraph DAG;
+	std::map<long int, GGraph::vertex_descriptor> id_to_V_DAG;
+	std::map<long int, GGraph::edge_descriptor> id_to_E_DAG;
+	/* Adding the component ids to the DAG vertices */
+	for (size_t i = 0; i < num_comps; i++) {
+		add_vertex_to_graph(DAG, id_to_V_DAG, i, 
+			temp_component_centroids[i].get<0>(), temp_component_centroids[i].get<1>());
+	}
+
+	//Add edges to DAG
+	for (auto eit = boost::edges(g).first; 
+		eit != boost::edges(g).second; ++eit) {
+		V_g s, t;
+		s = id_to_V[g[*eit].source];
+		t = id_to_V[g[*eit].target];
+		if (components[s] != components[t]) {
+			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+				boost::num_edges(DAG), components[s], components[t], g[*eit].weight,
+				DAG[components[s]].x, DAG[components[s]].y,
+				DAG[components[t]].x, DAG[components[t]].y,
 				level);
-        }
-    }
-    long int curr_vid, from_comp_id, to_comp_id;
-    Shortcut s;
-    //Compute Connections
-    for (auto vi = vertices(DAG).first;
-                        vi != vertices(DAG).second; ++vi) {
+		}
+	}
 
-    	curr_vid = DAG[*vi].id;
-    	if (boost::in_degree(*vi, DAG) != 0 && boost::out_degree(*vi, DAG) != 0) {
-            continue;
-        }
-        
-        if (boost::in_degree(*vi, DAG) == 0 && boost::out_degree(*vi, DAG) == 0) {
-            from_comp_id = curr_vid;
-            to_comp_id = (curr_vid +1)%num_vertices(DAG); 
-            //add edge to DAG
-            s.cost = 1;
-            s.reverse_cost = 1;
-        }
-        else if(boost::out_degree(*vi, DAG) == 0) {
-            from_comp_id = curr_vid;
-            EI_i_g eit, eit_end;
-            boost::tie(eit, eit_end) = in_edges(*vi, DAG);
-            to_comp_id = DAG[source(*eit, DAG)].id;
-            //add edge to DAG
-            s.cost = 1;
-            s.reverse_cost = -1;
-        }
+	long int curr_vid, from_comp_id, to_comp_id;
+	Shortcut s;
+	//Compute Connections
+	for (auto vi = vertices(DAG).first;
+		vi != vertices(DAG).second; ++vi) {
 
-        else {
-            EO_i_g eit, eit_end;
-            boost::tie(eit, eit_end) = out_edges(*vi, DAG);
-            from_comp_id = DAG[target(*eit, DAG)].id;
-            to_comp_id = curr_vid;
-            //add edge to DAG
-            s.cost = 1;
-            s.reverse_cost = -1;
-        }
-        s.source = from_comp_id;
-        s.target = to_comp_id;
+		curr_vid = DAG[*vi].id;
+		if (boost::in_degree(*vi, DAG) != 0 && boost::out_degree(*vi, DAG) != 0)
+			continue;
 
-        if (s.cost > 0) {
-        
-	        temp.source = *(temp_component_vertices[from_comp_id].begin());
-	        temp.target = *(temp_component_vertices[to_comp_id].begin());
-	        temp.level = level;
-	        /*
-	        std::cout << "s: " << temp.source << ", "
-	        << "t: " << temp.target << ", "
-	        <<  ", level: " << level << std::endl; 
-            */
-	        connections.push_back(temp);
-	        add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
-	            	boost::num_edges(DAG), s.source, s.target, s.cost,
-					-1.000, -1.000,
-					-1.000, -1.000,
-					level);
-        }
+		if (boost::in_degree(*vi, DAG) == 0 && boost::out_degree(*vi, DAG) == 0) {
+			from_comp_id = curr_vid; 
+			to_comp_id = DAG[get_closest_point(rtree, point_t(DAG[*vi].x, DAG[*vi].y))].id;
+			s.cost = 1;
+			s.reverse_cost = 1;
+		}
+		else if(boost::out_degree(*vi, DAG) == 0) {
+			from_comp_id = curr_vid;
+			EI_i_g eit, eit_end;
+			boost::tie(eit, eit_end) = in_edges(*vi, DAG);
+			to_comp_id = DAG[source(*eit, DAG)].id;
+			s.cost = 1;
+			s.reverse_cost = -1;
+		}
 
-        if (s.reverse_cost > 0) {
-	        temp.source = *(temp_component_vertices[to_comp_id].begin());
-	        temp.target = *(temp_component_vertices[from_comp_id].begin());
-	        temp.level = level;
-	        /*
-	        std::cout << "s: " << temp.target << ", "
-	        << "t: " << temp.source << ", "
-	        <<  ", level: " << level << std::endl; 
-	        */
-	        connections.push_back(temp);
+		else {
+			EO_i_g eit, eit_end;
+			boost::tie(eit, eit_end) = out_edges(*vi, DAG);
+			from_comp_id = DAG[target(*eit, DAG)].id;
+			to_comp_id = curr_vid;
+			s.cost = 1;
+			s.reverse_cost = -1;
+		}
+		s.source = from_comp_id;
+		s.target = to_comp_id;
+		
+		//std::cout << "yo" << std::endl;
+		if (s.cost > 0) {
 
-	        add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
-	            	boost::num_edges(DAG), s.target, s.source, s.reverse_cost,
-					-1.000, -1.000,
-					-1.000, -1.000,
-					level);
-        }
-    }
+			temp.source = *(temp_component_vertices[from_comp_id].begin());
+			temp.target = *(temp_component_vertices[to_comp_id].begin());
+			temp.level = level;
+			connections.push_back(temp);
+			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+				boost::num_edges(DAG), s.source, s.target, s.cost,
+				DAG[from_comp_id].x, DAG[from_comp_id].y,
+				DAG[to_comp_id].x, DAG[to_comp_id].y,
+				level);
+		}
 
-    makeStronglyConnected(DAG, id_to_V_DAG, temp_component_vertices, connections, level);  
+		if (s.reverse_cost > 0) {
+			temp.target = *(temp_component_vertices[from_comp_id].begin());
+			temp.source = *(temp_component_vertices[to_comp_id].begin());
+			temp.level = level;
+			connections.push_back(temp);
+
+			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
+				boost::num_edges(DAG), s.source, s.target, s.reverse_cost,
+				DAG[to_comp_id].x, DAG[to_comp_id].y,
+				DAG[from_comp_id].x, DAG[from_comp_id].y,
+				level);
+		}
+	}
+
+	makeStronglyConnected(DAG, id_to_V_DAG, 
+		temp_component_vertices, 
+		connections, level);  
 }
 
 
 void get_connections_at_level(GGraph &g, 
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
-        std::vector<Connection>& connections,
-        int level) {
+	std::vector<Connection>& connections,
+	int level) {
 
 	ComponentVertices comp_vertices;
+	ComponentPoint comp_geometry;
 	for (auto vi = vertices(g).first;
-	                   vi != vertices(g).second; ++vi) {
-	       comp_vertices[*vi].insert(g[*vi].id);
-	}
+		vi != vertices(g).second; ++vi)
+		comp_vertices[*vi].insert(g[*vi].id);
 	makeStronglyConnected(g, id_to_V, comp_vertices, connections, level);   
 }
 
@@ -706,13 +733,14 @@ void get_connections_at_levels(GGraph& g,
 			add_edge_to_graph(lg, id_to_V_l, id_to_E_l, 
 				boost::num_edges(lg), temp_connections[j].source, 
 				temp_connections[j].target, 1.00,
-					-1.000, -1.000,
-					-1.000, -1.000,
-					i);
+				lg[id_to_V_l[temp_connections[j].source]].x, lg[id_to_V_l[temp_connections[j].source]].y,
+				lg[id_to_V_l[temp_connections[j].target]].x, lg[id_to_V_l[temp_connections[j].target]].y,
+				i);
 		}
 		std::vector<long int> components(num_vertices(lg));
 		int num_comps = boost::strong_components(lg, 
 			boost::make_iterator_property_map(components.begin(), get(boost::vertex_index, lg)));
+		//std::cout << "Final num components: " << num_comps << std::endl;
 		assert(num_comps == 1);
 		connections.insert( connections.end(), temp_connections.begin(), temp_connections.end() );
 	}
