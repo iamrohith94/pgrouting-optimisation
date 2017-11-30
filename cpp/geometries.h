@@ -500,7 +500,7 @@ void get_connecting_edges(GGraph& g,
 	std::vector<PromotedEdge>& promoted_edges, 
 	int level) {
 
-
+	#if 0
 	bg::model::box<point_t> bbox;
 	
 	//Generating bbox 
@@ -537,8 +537,14 @@ void get_connecting_edges(GGraph& g,
 			id_to_V_b, id_to_E_b,
 			bbox);
 	}
+	#endif
+
+	std::vector<long int> path;
+	V_g g_s = id_to_V[s_id];
+	V_g g_t = id_to_V[t_id];
+	assert(get_astar_path(g, g_s, g_t, path));
 	
-	get_astar_edges(bg, id_to_V_b, path, promoted_edges, level);
+	get_astar_edges(g, id_to_V, path, promoted_edges, level);
 }
 
 // Returns the closest point to p in rtree 
