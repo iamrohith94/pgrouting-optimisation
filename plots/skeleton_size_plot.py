@@ -12,7 +12,7 @@ d = {}
 d["db"] = db
 d["table_e"] = table_e
 d["table_v"] = table_v
-conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="127.0.0.1", port="5432")
+conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
 num_levels = 10
@@ -25,23 +25,30 @@ size_query = "SELECT count(*) FROM %s"
 cur.execute(size_query, (AsIs(table_e), ));
 rows = cur.fetchall();
 for row in rows:
-	E = float(row[0])
+        E = float(row[0])
+'''
+cur.execute(size_query, (AsIs('contracted_ways'), ));
+rows = cur.fetchall();
+for row in rows:
+    E += float(row[0])
+'''
+print "total edges: " + str(E)
 
 levels = [x+1 for x in range(num_levels-1)]
 pos = range(num_levels-1)
 skeleton_sizes = []
 
 for i in levels:
-	cur.execute(skeleton_query, (AsIs(table_e), i));
-	rows = cur.fetchall();
-	for row in rows:
-		skeleton_sizes.append(float(row[0])*100.00/(E*1.00));
+        cur.execute(skeleton_query, (AsIs(table_e), i));
+        rows = cur.fetchall();
+        for row in rows:
+                skeleton_sizes.append(float(row[0])*100.00/(E*1.00));
 
 
 fig, ax = plt.subplots(figsize=(10,num_levels/2))
 
 for i in levels:
-	plt.bar(pos, 
+        plt.bar(pos, 
         #using df['pre_score'] data,
         skeleton_sizes, 
         # of width
@@ -49,7 +56,7 @@ for i in levels:
         # with alpha 0.5
         alpha=0.2, 
         # with color
-		color='#FFC222', 
+                color='#FFC222', 
         # with label the first value in first_name
         label=i) 
 
@@ -72,4 +79,4 @@ plt.ylim([0, max(skeleton_sizes)+5])
 # Adding the legend and showing the plot
 plt.grid()
 #plt.show()
-plt.savefig('images/'+db+'_skeleton_size.png',facecolor='white')
+plt.savefig('../images/'+db+'_skeleton_size.png',facecolor='white')

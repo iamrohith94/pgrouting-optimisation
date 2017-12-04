@@ -17,7 +17,7 @@ d['conn'] = conn
 cur = conn.cursor()
 num_levels = 10
 width = 0.25
-comp_query = "SELECT min(size), avg(size), max(size) FROM (SELECT count(*) AS size FROM %s WHERE component_%s != 1 GROUP BY component_%s) AS foo"
+comp_query = "SELECT level, min(num_edges), avg(num_edges), max(num_edges) FROM performance_results WHERE level != 10 GROUP BY level ORDER BY level "
 size_query = "SELECT count(*) FROM %s"
 
 
@@ -41,13 +41,12 @@ min_sizes = []
 max_sizes = []
 avg_sizes = []
 
-for i in levels:
-        cur.execute(comp_query, (AsIs(table_e), i, i));
-        rows = cur.fetchall();
-        for row in rows:
-                min_sizes.append(float(row[0])*100.00/(E*1.00));
-                avg_sizes.append(float(row[1])*100.00/(E*1.00));
-                max_sizes.append(float(row[2])*100.00/(E*1.00));
+cur.execute(comp_query, (AsIs(table_e)));
+rows = cur.fetchall();
+for row in rows:
+        min_sizes.append(float(row[1])*100.00/(E*1.00));
+        avg_sizes.append(float(row[2])*100.00/(E*1.00));
+        max_sizes.append(float(row[3])*100.00/(E*1.00));
 
 
 fig, ax = plt.subplots(figsize=(10,num_levels/2))
@@ -95,7 +94,7 @@ for i in levels:
 ax.set_ylabel('%')
 
 # Set the chart's title
-ax.set_title('Component sizes for '+db)
+ax.set_title('Graph sizes for '+db)
 
 # Set the position of the x ticks
 ax.set_xticks([p + 1.5 * width for p in pos])
@@ -111,4 +110,4 @@ plt.ylim([0, max(max_sizes)+5])
 plt.legend(['Min', 'Avg', 'Max'], loc='upper right')
 plt.grid()
 #plt.show()
-plt.savefig('../images/'+db+'_comp_size.png',facecolor='white')
+plt.savefig('./images/'+db+'_graph_size.png',facecolor='white')
