@@ -35,6 +35,7 @@ typedef std::map<long int, point_t> ComponentPoint;
 typedef std::map<long int, point_t>::iterator CP_I;
 typedef std::pair<point_t, long int> Value;
 typedef bgi::rtree<Value, bgi::linear<32>  > RTree; 
+#define debug_flag 0
 
 bool operator<(const VertexG &a, const VertexG &b)
 {
@@ -101,6 +102,44 @@ void print_vertex_components(GGraph g, std::vector<long int> components) {
  		}
  		std::cout << std::endl;
  	}
+ }
+
+/*
+ * Prints the component id and its vertices
+ * */
+ void print_comp_vertices(ComponentVertices& comp_vertices) {
+ 	ComponentVertices::iterator it;
+ 	std::set<VertexG>::iterator it_v;
+ 	for (it = comp_vertices.begin(); it != comp_vertices.end(); ++it) {
+ 		std::cout << "comp: " << it->first << std::endl;
+ 		for (it_v = it->second.begin(); it_v != it->second.end(); ++it_v) {
+ 			std::cout << it_v->id << ", "  << std::endl;
+ 		}
+ 		std::cout << std::endl;
+ 	}
+ }
+
+ /*
+ * Prints the component id and its vertices
+ * */
+ void print_comp_coordinates(ComponentPoint component_point) {
+ 	ComponentPoint::iterator it;
+ 	for (it = component_point.begin(); it != component_point.end(); ++it) {
+ 		std::cout << "comp: " << it->first << ", "
+ 		<< "x: " << (it->second).get<0>() << ", "
+ 		<< "y: " << (it->second).get<1>() << ", " 
+ 		<< std::endl;
+ 		
+ 		std::cout << std::endl;
+ 	}
+ }
+
+
+ void print_connection(Connection connection) {
+ 	std::cout << "source: " << connection.source << ", "
+ 		<< "target: " << connection.target << ", "
+ 		<< "level: " << connection.level << ", " 
+ 		<< std::endl;
  }
 
 /*
@@ -620,9 +659,12 @@ void makeStronglyConnected(GGraph &g,
 		boost::make_iterator_property_map(components.begin(),
 			get(boost::vertex_index,
 				g)));
-	//std::cout << "Initial connected components: " << num_comps << std::endl;
-	//std::cout << "Initial num vertices: " << totalNodes << std::endl;
-
+	
+	#if debug_flag
+	std::cout << "Num connected components: " << num_comps << std::endl;
+	std::cout << "Num vertices: " << totalNodes << std::endl;
+	#endif
+	
 	if (num_comps == 1) {
 		return ;
 	}
@@ -637,12 +679,23 @@ void makeStronglyConnected(GGraph &g,
 		bg::append(temp_component_multipoint[components[i]], 
 			point_t(g[i].x, g[i].y));
 	}
+
+	#if debug_flag
+	std::cout << "ComponentVertices: " << std::endl;
+	print_comp_vertices(temp_component_vertices);
+	#endif
+
 	CMP_I it;
 	CP_I c_it;
 	//Compute the centroids for components
 	for (it = temp_component_multipoint.begin(); 
 		it != temp_component_multipoint.end(); ++it)
 		bg::centroid(it->second, temp_component_centroids[it->first]);
+
+	#if debug_flag
+	std::cout << "ComponentPoints: " << std::endl;
+	print_comp_coordinates(temp_component_centroids);
+	#endif
 
 
 	//Construct an rtree with the centroids of components
@@ -740,6 +793,10 @@ void makeStronglyConnected(GGraph &g,
 			temp.source = closest_source;
 			temp.target = closest_target;
 			temp.level = level;
+			#if debug_flag
+			std::cout << "Connection: " << std::endl;
+			print_connection(temp);
+			#endif
 			connections.push_back(temp);
 			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
 				boost::num_edges(DAG), s.source, s.target, s.cost,
@@ -754,6 +811,10 @@ void makeStronglyConnected(GGraph &g,
 			temp.target = closest_source;
 			temp.source = closest_target;
 			temp.level = level;
+			#if debug_flag
+			std::cout << "Connection: " << std::endl;
+			print_connection(temp);
+			#endif
 			connections.push_back(temp);
 
 			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
@@ -793,7 +854,9 @@ void get_connections_at_levels(GGraph& g,
 	std::map<long int, GGraph::edge_descriptor> id_to_E_l;
 	for (int i = 1; i <= max_level; ++i) {
 		std::vector<Connection> temp_connections;
-		//std::cout << "Level: " << i << std::endl;
+		#if debug_flag
+		std::cout << "Level: " << i << std::endl;
+		#endif
 		get_graph_at_level(g, lg, id_to_V,
 			id_to_V_l, id_to_E_l, i);
 
