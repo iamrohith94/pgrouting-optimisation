@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
 	GGraph g;
 	std::map<long int, GGraph::vertex_descriptor> id_to_V;
 	std::map<long int, GGraph::edge_descriptor> id_to_E;
-	double start, end;
 	int flag;
 
 
@@ -157,12 +156,13 @@ int main(int argc, char *argv[])
 			connections[i].target, 
 			promoted_edges, 
 			connections[i].level);
-	/*	
+		#if 0
 		std::cout << connections[i].source 
 		<< ", " << connections[i].target
 		<< ", " << connections[i].level
 		<< ", " << world.rank() << std::endl;
-	*/	
+		#endif
+		
 	}
 	end = MPI_Wtime();
 	std::cout << "Wall clock taken for process " << world.rank() << " : " << end - start << std::endl;

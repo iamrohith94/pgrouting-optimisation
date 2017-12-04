@@ -27,7 +27,7 @@ typedef  boost::graph_traits < GGraph >::vertex_iterator V_i_g;
 typedef  boost::graph_traits < GGraph >::edge_iterator E_i_g;
 typedef boost::graph_traits < GGraph >::out_edge_iterator EO_i_g;
 typedef boost::graph_traits < GGraph >::in_edge_iterator EI_i_g;
-typedef std::map<long int, std::set<long int> > ComponentVertices;
+typedef std::map<long int, std::set<VertexG> > ComponentVertices;
 typedef std::map<long int, mpoint_t> ComponentMultiPoint;
 typedef std::map<long int, point_t> ComponentPoint;
 typedef std::map<long int, mpoint_t>::iterator CMP_I;
@@ -35,6 +35,11 @@ typedef std::map<long int, point_t> ComponentPoint;
 typedef std::map<long int, point_t>::iterator CP_I;
 typedef std::pair<point_t, long int> Value;
 typedef bgi::rtree<Value, bgi::linear<32>  > RTree; 
+
+bool operator<(const VertexG &a, const VertexG &b)
+{
+    return a.id < b.id;
+}
 
 
 /* Prints the graph with geometrical attributes */
@@ -552,6 +557,52 @@ long int get_closest_point(RTree &rtree, point_t p) {
 		return returned_values[0].second;	
 }
 
+VertexG get_largest_x(std::set<VertexG>& comp_vertices) {
+	VertexG l_x;
+	std::set<VertexG>::iterator it = comp_vertices.begin();
+	l_x = *it;
+	++it;
+	while(it != comp_vertices.end()) {
+		if (it->x > l_x.x) {
+			l_x = *it;
+		}
+		++it;
+	}
+	return l_x;
+}
+
+VertexG get_smallest_x(std::set<VertexG>& comp_vertices) {
+	VertexG s_x;
+	std::set<VertexG>::iterator it = comp_vertices.begin();
+	s_x = *it;
+	++it;
+	while(it != comp_vertices.end()) {
+		if (it->x < s_x.x) {
+			s_x = *it;
+		}
+		++it;
+	}
+	return s_x;
+}
+
+std::pair<VertexG, VertexG> get_closest_x_points(
+	long int c_id_1,
+	point_t c_centroid_1, 
+	long int c_id_2,
+	point_t c_centroid_2, 
+	ComponentVertices& comp_vertices) {
+	long int left_comp, right_comp;
+	if (c_centroid_1.get<0>() < c_centroid_2.get<0>()) {
+		left_comp = c_id_1;
+		right_comp = c_id_2;
+	}
+	else {
+		left_comp = c_id_2;
+		right_comp = c_id_1;
+	}
+	return std::make_pair(get_largest_x(comp_vertices[left_comp]),
+		get_smallest_x(comp_vertices[right_comp]));
+}
 
 void makeStronglyConnected(GGraph &g,
 	std::map<long int, GGraph::vertex_descriptor>& id_to_V,
@@ -662,12 +713,32 @@ void makeStronglyConnected(GGraph &g,
 		}
 		s.source = from_comp_id;
 		s.target = to_comp_id;
+
+		std::pair<VertexG, VertexG> closest_pair;
+		long int closest_source, closest_target;
+		closest_pair = get_closest_x_points(
+			from_comp_id, 
+			point_t(DAG[from_comp_id].x, DAG[from_comp_id].y),
+			to_comp_id,
+			point_t(DAG[to_comp_id].x, DAG[to_comp_id].y),
+			temp_component_vertices);
+		if (temp_component_vertices[from_comp_id].find(closest_pair.first) 
+			!= temp_component_vertices[from_comp_id].end()) {
+			closest_source = closest_pair.first.id;
+			closest_target = closest_pair.second.id;
+		}
+		else {
+			closest_target = closest_pair.first.id;
+			closest_source = closest_pair.second.id;
+		}
 		
 		//std::cout << "yo" << std::endl;
 		if (s.cost > 0) {
 
-			temp.source = *(temp_component_vertices[from_comp_id].begin());
-			temp.target = *(temp_component_vertices[to_comp_id].begin());
+			//temp.source = *(temp_component_vertices[from_comp_id].begin());
+			//temp.target = *(temp_component_vertices[to_comp_id].begin());
+			temp.source = closest_source;
+			temp.target = closest_target;
 			temp.level = level;
 			connections.push_back(temp);
 			add_edge_to_graph(DAG, id_to_V_DAG, id_to_E_DAG, 
@@ -678,8 +749,10 @@ void makeStronglyConnected(GGraph &g,
 		}
 
 		if (s.reverse_cost > 0) {
-			temp.target = *(temp_component_vertices[from_comp_id].begin());
-			temp.source = *(temp_component_vertices[to_comp_id].begin());
+			//temp.target = *(temp_component_vertices[from_comp_id].begin());
+			//temp.source = *(temp_component_vertices[to_comp_id].begin());
+			temp.target = closest_source;
+			temp.source = closest_target;
 			temp.level = level;
 			connections.push_back(temp);
 
@@ -703,10 +776,9 @@ void get_connections_at_level(GGraph &g,
 	int level) {
 
 	ComponentVertices comp_vertices;
-	ComponentPoint comp_geometry;
 	for (auto vi = vertices(g).first;
 		vi != vertices(g).second; ++vi)
-		comp_vertices[*vi].insert(g[*vi].id);
+		comp_vertices[*vi].insert(g[*vi]);
 	makeStronglyConnected(g, id_to_V, comp_vertices, connections, level);   
 }
 

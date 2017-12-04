@@ -5,6 +5,21 @@
 
 #include "geometries.h"
 
+void dump_to_file(std::string output_file, 
+	std::vector<Connection>& connections,
+	int process_id, 
+	const char delimiter) {
+	std::ofstream myfile;
+	myfile.open (("./data/"+output_file+"_"+std::to_string(process_id)+"_conns_test.csv").c_str());
+	for (int i = 0; i < connections.size(); ++i) {
+		myfile 	<< connections[i].source << delimiter
+		<< connections[i].target << delimiter
+		<< connections[i].level
+		<< std::endl; 
+		//<< ", " << world.rank() << std::endl;
+	}
+    myfile.close();
+}
 
 int main(int argc, char const *argv[])
 {

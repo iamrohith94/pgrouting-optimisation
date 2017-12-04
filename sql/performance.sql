@@ -28,6 +28,8 @@ DECLARE
   final_sql TEXT;
   start_vids BIGINT[];
   end_vids BIGINT[];
+  p_s BIGINT;
+  p_t BIGINT;
 BEGIN
     /*
     start_vids := ARRAY(
@@ -43,8 +45,8 @@ BEGIN
     LIMIT num_pairs
     );
     */
-    EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||' ORDER BY RANDOM() LIMIT '||num_pairs||')' INTO start_vids;
-    EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||' ORDER BY RANDOM() LIMIT '||num_pairs||')' INTO end_vids;
+    EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||'  WHERE id = parent ORDER BY RANDOM() LIMIT '||num_pairs||')' INTO start_vids;
+    EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||'  WHERE id = parent ORDER BY RANDOM() LIMIT '||num_pairs||')' INTO end_vids;
     
     FOR level in 1 .. num_levels
     LOOP
