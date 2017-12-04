@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 	}
 	std::string graph_file_name(argv[1]);
 	std::string connections_file_name(argv[2]);
+	double start, end;
 	int num_levels;
 	if (argc == 4)
 		num_levels = std::atoi(argv[3]);
@@ -147,6 +148,7 @@ int main(int argc, char *argv[])
 	get_process_connections("./data/"+connections_file_name+".csv", connections, world.rank(), world.size(), ',');
 	//std::cout << "Received connnections by " << world.rank() << std::endl;
 	//std::cout << connections.size() << ", " << world.rank() << std::endl;
+	start = MPI_Wtime();
 	for (int i = 0; i < connections.size(); ++i) {
 		
 		get_connecting_edges(g,
@@ -162,6 +164,8 @@ int main(int argc, char *argv[])
 		<< ", " << world.rank() << std::endl;
 	*/	
 	}
+	end = MPI_Wtime();
+	std::cout << "Wall clock taken for process " << world.rank() << " : " << end - start << std::endl;
 	//std::cout << "Computed connnection edges by " << world.rank() << std::endl;	
 	//std::cout << "Promoted edges of Process " << world.rank() << std::endl;
 	#if 0

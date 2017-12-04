@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
 		
 		
 		end = MPI_Wtime();
-		//std::cout << "Wall clock taken for process " << world.rank() << " : " << end - start << std::endl;
+		std::cout << "Wall clock taken for process " << world.rank() << " : " << end - start << std::endl;
 		//std::cout << "Hi from process " << world.rank() << " of " << world.size() << std::endl;
 
 		if (process_id(pg) == 0) {
