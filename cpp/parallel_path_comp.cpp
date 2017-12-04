@@ -11,6 +11,7 @@
 #include <boost/serialization/map.hpp> 
 #include <boost/serialization/set.hpp> 
 #include "geometries.h"
+#include <cstdlib>
 
 
 int line_count(std::string file_name) {
@@ -69,6 +70,22 @@ void get_process_connections(std::string file_name,
 	}
 }
 
+void dump_to_file(std::string output_file, 
+	std::vector<PromotedEdge>& promoted_edges,
+	int process_id, 
+	const char delimiter) {
+	std::ofstream myfile;
+	myfile.open (("./data/"+output_file+"_"+std::to_string(process_id)+"_conn_edges_test.csv").c_str());
+	for (int i = 0; i < promoted_edges.size(); ++i) {
+		myfile << promoted_edges[i].id << delimiter
+		<< promoted_edges[i].source << delimiter
+		<< promoted_edges[i].target << delimiter
+		<< promoted_edges[i].level
+		<< std::endl; 
+		//<< ", " << world.rank() << std::endl;
+	}
+    myfile.close();
+}
 
 
 int main(int argc, char *argv[])
@@ -147,6 +164,7 @@ int main(int argc, char *argv[])
 	}
 	//std::cout << "Computed connnection edges by " << world.rank() << std::endl;	
 	//std::cout << "Promoted edges of Process " << world.rank() << std::endl;
+	#if 0
 	for (int i = 0; i < promoted_edges.size(); ++i) {
 		std::cout << promoted_edges[i].id << ", "
 		<< promoted_edges[i].source << ", "
@@ -155,6 +173,8 @@ int main(int argc, char *argv[])
 		<< std::endl; 
 		//<< ", " << world.rank() << std::endl;
 	}
+	#endif
+	dump_to_file(graph_file_name, promoted_edges, world.rank(), ',');
 	
 	return 0;
 }
