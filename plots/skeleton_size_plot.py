@@ -79,4 +79,4 @@ plt.ylim([0, max(skeleton_sizes)+5])
 # Adding the legend and showing the plot
 plt.grid()
 #plt.show()
-plt.savefig('../images/'+db+'_skeleton_size.png',facecolor='white')
+plt.savefig('./images/'+db+'_skeleton_size.png',facecolor='white')

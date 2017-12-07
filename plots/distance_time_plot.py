@@ -20,7 +20,7 @@ num_levels = 10
 num_intervals = 5
 width = 0.15
 actual_dist_query = "SELECT source, target, path_len FROM performance_results WHERE level = 10 ORDER BY path_len"
-appx_dist_query = "SELECT path_len FROM performance_results WHERE level = %s AND source = %s AND target = %s"
+appx_time_query = "SELECT avg_computation_time FROM performance_results WHERE level = %s AND source = %s AND target = %s"
 
 actual_distances = []
 #Fetching number of on contracted edges
@@ -34,13 +34,10 @@ for row in rows:
 min_actual_dist = min(actual_distances)*111
 max_actual_dist = max(actual_distances)*111
 
-#print "actual_distances:"
-#print actual_distances
 
 #print "st_pairs:"
 #print st_pairs
 
-dist_ranges = np.array_split(actual_distances, num_intervals)
 st_ranges = np.array_split(st_pairs, num_intervals)
 
 #print "distance range:"
@@ -53,22 +50,22 @@ st_ranges = np.array_split(st_pairs, num_intervals)
 levels = [x+1 for x in range(num_levels-1)]
 pos = range(num_levels-1)
 
-approx_values = {}
+avg_time_values = {}
 
 
 for i in levels:
-        approx_values[i] = []
+        avg_time_values[i] = []
         for j in range(0, num_intervals):
                 values = []
-                for k in range(0, len(dist_ranges[j])):
+                for k in range(0, len(st_ranges[j])):
                         s = st_ranges[j][k][0]
                         t = st_ranges[j][k][1]
-                        a_d = dist_ranges[j][k]
-                        cur.execute(appx_dist_query, (i, s, t,));
+#                        a_d = dist_ranges[j][k]
+                        cur.execute(appx_time_query, (i, s, t,));
                         rows = cur.fetchall();
                         for row in rows:
-                                values.append((row[0]-a_d)*100.00/a_d)
-                approx_values[i].append(np.mean(values))
+                                values.append(row[0])
+                avg_time_values[i].append(np.mean(values))
         #print len(approx_values[i])
 '''
 print "approx_values"
@@ -82,7 +79,7 @@ for i in levels:
         for j in range(0, num_intervals):
                 plt.bar([p + width*j for p in pos], 
                 #using df['post_score'] data,
-                [approx_values[l][j] for l in levels],
+                [avg_time_values[l][j] for l in levels],
                 # of width
                 width, 
                 # with alpha 0.5
@@ -93,11 +90,11 @@ for i in levels:
                 label=i) 
  
 # Set the y axis label
-ax.set_ylabel('Approximate Distance Error')
+ax.set_ylabel('Avg Computation Time (millisec)')
 ax.set_xlabel('Actual Distance ('+str(format(min_actual_dist, '.2f'))+'kms - '+str(format(max_actual_dist, '.2f'))+'kms)')
 
 # Set the chart's title
-ax.set_title('Path exactness for '+db)
+ax.set_title('Computation time for '+db)
 
 # Set the position of the x ticks
 ax.set_xticks([p + 1.5 * width for p in pos])
@@ -112,4 +109,4 @@ ax.set_xticklabels(levels)
 # Adding the legend and showing the plot
 plt.grid()
 #plt.show()
-plt.savefig('./images/'+db+'_path_error.png',facecolor='white')
+plt.savefig('./images/'+db+'_path_computation_time.png',facecolor='white')
