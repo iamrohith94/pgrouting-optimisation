@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string>
 #include <stdio.h>
-
+#include <math.h>
 #include "ranker.h"
 
 #ifndef TYPES_H
@@ -260,6 +260,9 @@ int get_levels(std::vector<double> values, int num_levels, std::vector<int>& lev
 	return 1;
 }
 
+
+
+
 int get_levels(std::vector<int> values, int num_levels, std::vector<int>& level) {
     int bucket_size = 100/num_levels, interval_size, prev;
 	std::vector<int> caps;
@@ -299,6 +302,25 @@ int get_levels(std::vector<int> values, int num_levels, std::vector<int>& level)
 	return 1;
 }
 
+void get_equal_interval_levels(std::vector<int> values, 
+	int num_levels, std::vector<int>& level) {
+    int bucket_size = values.size()/num_levels;
+    //std::cout << "bucket_size: " << bucket_size << std::endl;
+    level.resize(values.size());
+    int curr_level;
+    std::vector<std::pair<int,int> > value_index;
+    for (int i = 0; i < values.size(); ++i) {
+    	value_index.push_back(std::make_pair(values[i], i));
+    }
+    sort(value_index.begin(), value_index.end());
+    std::reverse(value_index.begin(), value_index.end());
+    for (int i = 0; i < value_index.size(); ++i) {
+    	//std::cout << "i: " << i << std::endl;
+    	curr_level = (i/bucket_size)+1;
+    	level[value_index[i].second] = curr_level > num_levels ? num_levels : curr_level;
+    	//std::cout << "level: " << level[value_index[i].second] << std::endl;
+    }
+}
 
 int get_random_sources(Graph &g, std::set<V>& indexes) {
 	size_t max_index = num_vertices(g);
@@ -352,7 +374,8 @@ int dump_to_file(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_
 			comp_init += "1";
 	}
 	*/
-	get_levels(edge_centrality, num_levels, level);
+	get_equal_interval_levels(edge_centrality, num_levels, level);
+	//get_levels(edge_centrality, num_levels, level);
 	assert(edge_centrality.size() == level.size());
     myfile.open (("./data/"+output_file+"_betweenness.csv").c_str());
 

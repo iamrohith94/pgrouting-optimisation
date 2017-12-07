@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
 	if (flag == 1) {
 
-		get_betweenness_vertices_from_db(dbname, vertex_table, 4, 2, vertices);
+		get_betweenness_vertices_from_db(dbname, vertex_table, 4, 4, vertices);
 		#if 0
 		std::cout << "Vertices: " << std::endl;
 		for (int i = 0; i < vertices.size(); ++i) {
