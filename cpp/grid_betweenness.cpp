@@ -74,7 +74,7 @@ void get_dijkstra_paths(Graph &g,
 	std::map<long int, Graph::vertex_descriptor>& id_to_V,
 	std::map<long int, Graph::edge_descriptor>& id_to_E,
 	std::vector<std::pair<long int, long int> >& st_pairs, 
-	std::vector<int>& individual_betweenness, int process_id) {
+	std::vector<long int>& individual_betweenness, int process_id) {
 	Dijkstra<Graph> d;
 	std::vector<E> path_edges;
 	for (int i = 0; i < st_pairs.size(); ++i) {
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
 	if (flag == 1) {
 
-		get_betweenness_vertices_from_db(dbname, vertex_table, 4, 4, vertices);
+		get_betweenness_vertices_from_db(dbname, vertex_table, 4, 2, vertices);
 		#if 0
 		std::cout << "Vertices: " << std::endl;
 		for (int i = 0; i < vertices.size(); ++i) {
@@ -231,8 +231,8 @@ int main(int argc, char* argv[]) {
 
 	//std::cout << "start: " << start << ", end: " << end 
 	//		<< ", process: " << world.rank() << std::endl;
-	std::vector<int> individual_betweenness(boost::num_edges(g),0);
-	std::vector<int> total_betweenness(boost::num_edges(g),0);
+	std::vector<long int> individual_betweenness(boost::num_edges(g),0);
+	std::vector<long int> total_betweenness(boost::num_edges(g),0);
 	std::vector<std::pair<long int, long int> > st_pairs_process(st_pairs.begin()+start, st_pairs.begin()+end);
 	#if 0
 	std::cout << "ST Pairs: " << st_pairs_process.size() 
@@ -275,7 +275,7 @@ int main(int argc, char* argv[]) {
         	<< ", process: " << world.rank() << std::endl;
         }
         #endif
-    	int dump_flag = dump_to_file(g, id_to_E, total_betweenness, num_levels, dbname, ',');
+    	int dump_flag = dump_to_file_group_by_id(g, id_to_E, total_betweenness, num_levels, dbname, ',');
     	//std::cout << "Dump flag: " << dump_flag << std::endl;
     	if(dump_flag != -1) {
     		std::cout << "Dump succeeded" << std::endl;

@@ -322,6 +322,26 @@ void get_equal_interval_levels(std::vector<int> values,
     }
 }
 
+void get_equal_interval_levels(std::map<long int, long int> values, 
+	int num_levels, std::map<long int, long int>& level) {
+    int bucket_size = values.size()/num_levels;
+    //std::cout << "bucket_size: " << bucket_size << std::endl;
+    int curr_level;
+    std::vector<std::pair<int,int> > value_index;
+    std::map<long int, long int>::iterator it1, it2;
+    for (it1 = values.begin(); it1 != values.end(); ++it1) {
+    	value_index.push_back(std::make_pair(it1->second, it1->first));
+    }
+    sort(value_index.begin(), value_index.end());
+    std::reverse(value_index.begin(), value_index.end());
+    for (int i = 0; i < value_index.size(); ++i) {
+    	//std::cout << "i: " << i << std::endl;
+    	curr_level = (i/bucket_size)+1;
+    	level[value_index[i].second] = curr_level > num_levels ? num_levels : curr_level;
+    	//std::cout << "level: " << level[value_index[i].second] << std::endl;
+    }
+}
+
 int get_random_sources(Graph &g, std::set<V>& indexes) {
 	size_t max_index = num_vertices(g);
 	int random_index;
@@ -331,60 +351,36 @@ int get_random_sources(Graph &g, std::set<V>& indexes) {
 	return 1;
 }
 
-
-int dump_to_file(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_to_E,
-	const std::vector<double> edge_centrality, std::vector<int>& level, int num_levels,
+int dump_to_file_group_by_id(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_to_E,
+	const std::vector<long int> edge_centrality, int num_levels,
 	std::string output_file, const char delimiter) {
 	std::ofstream myfile;
-	/*
-	std::string comp_init="";
-	for (int j = 0; j < num_levels; ++j) {
-		if (j < num_levels-1)
-			comp_init +=  "1, ";
-		else
-			comp_init += "1";
-	}
-	*/
-	get_levels(edge_centrality, num_levels, level);
-    myfile.open (("./data/"+output_file+"_betweenness.csv").c_str());
+	std::map<long int, long int> edge_id_betweenness;
+	std::map<long int, long int> edge_id_levels;
+	std::map<long int, long int>::iterator it;
+	long int temp;
 
-    for (int i = 0; i < edge_centrality.size(); ++i) {
-    	myfile << g[id_to_E[i]].id << delimiter
-    	<< g[id_to_E[i]].source << delimiter
-    	<< g[id_to_E[i]].target << delimiter
-    	<< edge_centrality[i] << delimiter 
-    	<< level[i] << std::endl;
-    	//<< comp_init << std::endl;
+	for (int i = 0; i < edge_centrality.size(); ++i) {
+		std::cout << "id: " << g[id_to_E[i]].id 
+		<< ", b: " << edge_centrality[i] << std::endl;
+
+		if (edge_id_betweenness.find(g[id_to_E[i]].id) 
+			!= edge_id_betweenness.end()) {
+			temp = edge_id_betweenness[g[id_to_E[i]].id];
+			edge_id_betweenness[g[id_to_E[i]].id] = 
+			std::max(temp, edge_centrality[i]);
+		}
+		else
+			edge_id_betweenness[g[id_to_E[i]].id] = edge_centrality[i];
     }
-    myfile.close();
-    return 1;
-}
-
-int dump_to_file(const Graph &g, std::map<long int, Graph::edge_descriptor>& id_to_E,
-	const std::vector<int> edge_centrality, int num_levels,
-	std::string output_file, const char delimiter) {
-	std::ofstream myfile;
-	std::vector<int> level; 
-	/*
-	std::string comp_init="";
-	for (int j = 0; j < num_levels; ++j) {
-		if (j < num_levels-1)
-			comp_init +=  "1, ";
-		else
-			comp_init += "1";
-	}
-	*/
-	get_equal_interval_levels(edge_centrality, num_levels, level);
+	get_equal_interval_levels(edge_id_betweenness, num_levels, edge_id_levels);
 	//get_levels(edge_centrality, num_levels, level);
-	assert(edge_centrality.size() == level.size());
+	assert(edge_id_betweenness.size() == edge_id_levels.size());
     myfile.open (("./data/"+output_file+"_betweenness.csv").c_str());
 
-    for (int i = 0; i < edge_centrality.size(); ++i) {
-    	myfile << g[id_to_E[i]].id << delimiter
-    	<< g[id_to_E[i]].source << delimiter
-    	<< g[id_to_E[i]].target << delimiter
-    	<< edge_centrality[i] << delimiter 
-    	<< level[i] << std::endl;
+    for (it = edge_id_levels.begin(); it != edge_id_levels.end(); ++it) {
+    	myfile << it->first << delimiter 
+    	<< it->second << std::endl;
     	//<< comp_init << std::endl;
     }
     myfile.close();
