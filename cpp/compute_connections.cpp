@@ -8,10 +8,9 @@
 
 void dump_to_file(std::string output_file, 
 	std::vector<Connection>& connections,
-	int process_id, 
 	const char delimiter) {
 	std::ofstream myfile;
-	myfile.open (("./data/"+output_file+"_"+std::to_string(process_id)+"_conns_test.csv").c_str());
+	myfile.open (("./data/"+output_file+"_conns.csv").c_str());
 	for (int i = 0; i < connections.size(); ++i) {
 		myfile 	<< connections[i].source << delimiter
 		<< connections[i].target << delimiter
@@ -76,15 +75,15 @@ int main(int argc, char const *argv[])
 
 	reorder_connections_by_level(connections, num_levels);
 
-	//std::cout << "Connections " << std::endl;
+	/*std::cout << "Connections " << std::endl;
 	for (int i = 0; i < connections.size(); ++i) {
 		std::cout 
 		<< connections[i].source
 		<< ", " << connections[i].target
 		<< ", " << connections[i].level
 		<< std::endl;
-	}
-	
+	}*/
+	dump_to_file(file_name, connections, ',');
 
 
 

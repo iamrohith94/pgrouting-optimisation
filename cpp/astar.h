@@ -67,7 +67,7 @@ class Pgr_astar {
  			predecessors.resize(num_vertices(g));
  			distances.resize(num_vertices(g));
          	//std::cout << "starting astar " << std::endl;
-         	std::cout << "source: " << g[source].id << ", target: " << g[target].id << std::endl;
+         	//std::cout << "source: " << g[source].id << ", target: " << g[target].id << std::endl;
  			boost::astar_search(
  			        g, source,
  			        distance_heuristic(g, target),

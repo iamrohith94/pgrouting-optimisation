@@ -105,6 +105,6 @@ LANGUAGE plpgsql VOLATILE STRICT;
 
 
 SELECT assert_skeleton_strongly_connected('cleaned_ways', :num_levels);
---SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
---SELECT assert_edge_count('cleaned_ways', :num_levels);
---SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);
+SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
+SELECT assert_edge_count('cleaned_ways', :num_levels);
+SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);

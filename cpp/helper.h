@@ -361,8 +361,8 @@ int dump_to_file_group_by_id(const Graph &g, std::map<long int, Graph::edge_desc
 	long int temp;
 
 	for (int i = 0; i < edge_centrality.size(); ++i) {
-		std::cout << "id: " << g[id_to_E[i]].id 
-		<< ", b: " << edge_centrality[i] << std::endl;
+		//std::cout << "id: " << g[id_to_E[i]].id 
+		//<< ", b: " << edge_centrality[i] << std::endl;
 
 		if (edge_id_betweenness.find(g[id_to_E[i]].id) 
 			!= edge_id_betweenness.end()) {

@@ -58,6 +58,12 @@ struct PromotedEdge {
 	long int source;
 	long int target;
 	int level;
+	template <typename Ar> void serialize(Ar& ar, unsigned) { 
+		ar & id; 
+		ar & source; 
+		ar & target;
+		ar & level;
+	}
 };
 
 struct Connection {

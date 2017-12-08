@@ -71,18 +71,18 @@ void get_process_connections(std::string file_name,
 }
 
 void dump_to_file(std::string output_file, 
-	std::vector<PromotedEdge>& promoted_edges,
-	int process_id, 
+	std::vector<std::vector<PromotedEdge> >& total_promoted_edges,
 	const char delimiter) {
 	std::ofstream myfile;
-	myfile.open (("./data/"+output_file+"_"+std::to_string(process_id)+"_conn_edges_test.csv").c_str());
-	for (int i = 0; i < promoted_edges.size(); ++i) {
-		myfile << promoted_edges[i].id << delimiter
-		<< promoted_edges[i].source << delimiter
-		<< promoted_edges[i].target << delimiter
-		<< promoted_edges[i].level
-		<< std::endl; 
-		//<< ", " << world.rank() << std::endl;
+	myfile.open (("./data/"+output_file+"_conn_edges.csv").c_str());
+	for (int i = 0; i < total_promoted_edges.size(); ++i) {
+		for (int j = 0; j < total_promoted_edges[i].size(); ++j) {
+			myfile << total_promoted_edges[i][j].id << delimiter
+			<< total_promoted_edges[i][j].source << delimiter
+			<< total_promoted_edges[i][j].target << delimiter
+			<< total_promoted_edges[i][j].level
+			<< std::endl; 
+		}
 	}
     myfile.close();
 }
@@ -112,7 +112,6 @@ int main(int argc, char *argv[])
 	std::map<long int, GGraph::vertex_descriptor> id_to_V;
 	std::map<long int, GGraph::edge_descriptor> id_to_E;
 	int flag;
-
 
 	if (world.rank() == 0) {
 		std::string s; 
@@ -145,8 +144,7 @@ int main(int argc, char *argv[])
 	std::vector<PromotedEdge> promoted_edges;
 	std::vector<Connection> connections;
 	get_process_connections("./data/"+connections_file_name+".csv", connections, world.rank(), world.size(), ',');
-	//std::cout << "Received connnections by " << world.rank() << std::endl;
-	//std::cout << connections.size() << ", " << world.rank() << std::endl;
+	std::cout << "Received " << connections.size() << " connnections by " << world.rank() << std::endl;
 	start = MPI_Wtime();
 	for (int i = 0; i < connections.size(); ++i) {
 		
@@ -178,7 +176,19 @@ int main(int argc, char *argv[])
 		//<< ", " << world.rank() << std::endl;
 	}
 	#endif
-	dump_to_file(graph_file_name, promoted_edges, world.rank(), ',');
+	/*
+	Gathering the path between connections from all the processes
+	*/
+	if (world.rank() == 0) {
+		std::vector<std::vector<PromotedEdge> > total_promoted_edges;
+		boost::mpi::gather(world, promoted_edges, total_promoted_edges, 0);
+		dump_to_file(graph_file_name, total_promoted_edges, ',');
+	}
+	else {
+		boost::mpi::gather(world, promoted_edges, 0);	
+	}
+
+
 	
 	return 0;
 }
