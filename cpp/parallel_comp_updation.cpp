@@ -7,7 +7,8 @@
 int main(int argc, char *argv[])
 {
 	std::string conn_str, temp, dbname, edge_table, vertex_table, comp_sql, residue_sql,
-	skeletal_v_update_sql, non_skeletal_v_update_sql, cut_e_update_sql, non_skeletal_e_update_sql, edges_sql;
+	skeletal_v_update_sql, non_skeletal_v_update_sql, cut_e_update_sql, 
+	non_skeletal_e_update_sql, edges_sql, non_skeletal_v_sql, non_skeletal_vertices;
 	edge_table = "cleaned_ways";
 	vertex_table = "cleaned_ways_vertices_pgr";
 	int num_levels, num_iterations, num_connections, source;
@@ -29,11 +30,13 @@ int main(int argc, char *argv[])
     FROM %s AS edges \
     WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
 
+    // Vertices other than skeleton
+    non_skeletal_v_sql = "SELECT array_agg(id) FROM %s WHERE component_%s != 1";
+
     // All edges except skeletal edges and edges connecting the skeleton
-    residue_sql = "SELECT ways.id, ways.source, ways.target, ways.cost \
-    FROM %s AS ways,%s AS vertices \
-    WHERE NOT ((ways.source = vertices.id OR ways.target = vertices.id) AND vertices.component_%s = 1)
-    GROUP BY ways.id, ways.source, ways.target, ways.cost";
+    residue_sql = "SELECT id, source, target, cost \
+    FROM %s  \
+    WHERE source != ALL(%s) AND target != ALL(%s)";
     
     // Components of the residual network
     comp_sql = "SELECT component, array_agg(node) AS vids \
@@ -97,52 +100,73 @@ int main(int argc, char *argv[])
 				W.exec( temp.c_str() );
 				W.commit();
 
-				//Extracting the components from residue network
-				pqxx::work N(C);
-				temp = (boost::format(residue_sql) %edge_table %vertex_table
+				//Fetching the non skeletal vertices
+				pqxx::work N1(C);
+				temp = (boost::format(non_skeletal_v_sql) %vertex_table
 					%i).str();
-				temp = (boost::format(comp_sql) 
-					%N.quote(temp)).str();
-				pqxx::result R( N.exec( temp.c_str() ));
-				N.commit();
+				pqxx::result R1( N1.exec( temp.c_str() ));
+				N1.commit();
 
-				for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-					component_ids.push_back(c[0].as<long int>());
-					temp = c[1].as<std::string>();
-					temp.erase(0, 1);
-					temp.erase(temp.size() - 1);
-					temp = "ARRAY["+temp+"]";
-					component_vertices_array.push_back(temp);
+				for (pqxx::result::const_iterator c = R1.begin(); c != R1.end(); ++c) {
+					if (c[0].size() == 0) {
+						non_skeletal_vertices = "";
+						break;
+					}
+					non_skeletal_vertices = c[0].as<std::string>();
+					non_skeletal_vertices.erase(0, 1);
+					non_skeletal_vertices.erase(non_skeletal_vertices.size() - 1);
+					non_skeletal_vertices = "ARRAY["+non_skeletal_vertices+"]";
 				}
-				for (int j = 0; j < component_ids.size(); ++j) {
-					// Updating the component ids of the edges
-					pqxx::work W1(C);
-					comp_id = component_ids[j]+1;
-					cut_id = -comp_id;
-					temp = (boost::format(non_skeletal_e_update_sql) %edge_table 
-						%i %comp_id %component_vertices_array[j] 
-						%component_vertices_array[j]).str();
-					W1.exec(temp.c_str());
-					W1.commit();
+
+				if (non_skeletal_vertices.size() > 0) {
+					//Extracting the components from residue network
+					pqxx::work N2(C);
+					temp = (boost::format(residue_sql) %edge_table %non_skeletal_vertices
+						%non_skeletal_vertices).str();
+					temp = (boost::format(comp_sql) 
+						%N2.quote(temp)).str();
+					pqxx::result R2( N2.exec( temp.c_str() ));
+					N2.commit();
+
+					for (pqxx::result::const_iterator c = R2.begin(); c != R2.end(); ++c) {
+						component_ids.push_back(c[0].as<long int>());
+						temp = c[1].as<std::string>();
+						temp.erase(0, 1);
+						temp.erase(temp.size() - 1);
+						temp = "ARRAY["+temp+"]";
+						component_vertices_array.push_back(temp);
+					}
+					for (int j = 0; j < component_ids.size(); ++j) {
+						// Updating the component ids of the edges
+						pqxx::work W1(C);
+						comp_id = component_ids[j]+1;
+						cut_id = -comp_id;
+						temp = (boost::format(non_skeletal_e_update_sql) %edge_table 
+							%i %comp_id %component_vertices_array[j] 
+							%component_vertices_array[j]).str();
+						W1.exec(temp.c_str());
+						W1.commit();
 
 
-					// Updating the component ids of the nodes
-					pqxx::work W2(C);
-					temp = (boost::format(non_skeletal_v_update_sql) %vertex_table 
-						%i %comp_id %component_vertices_array[j]).str();
-					W2.exec(temp.c_str());
-					W2.commit();
+						// Updating the component ids of the nodes
+						pqxx::work W2(C);
+						temp = (boost::format(non_skeletal_v_update_sql) %vertex_table 
+							%i %comp_id %component_vertices_array[j]).str();
+						W2.exec(temp.c_str());
+						W2.commit();
 
 
-					// Updating the component ids cut edges
-					pqxx::work W3(C);
-	                temp = (boost::format(cut_e_update_sql) %edge_table
-	                        %i %cut_id %component_vertices_array[j] %component_vertices_array[j]
-	                         %i %i %comp_id).str();
-	                W3.exec(temp.c_str());
-	                W3.commit();
+						// Updating the component ids cut edges
+						pqxx::work W3(C);
+		                temp = (boost::format(cut_e_update_sql) %edge_table
+		                        %i %cut_id %component_vertices_array[j] %component_vertices_array[j]
+		                         %i %i %comp_id).str();
+		                W3.exec(temp.c_str());
+		                W3.commit();
 
+					}
 				}
+				
 
 
 			}
