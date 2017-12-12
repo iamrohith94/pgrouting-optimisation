@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     // All edges except skeletal edges and edges connecting the skeleton
     residue_sql = "SELECT id, source, target, cost \
     FROM %s  \
-    WHERE source != ALL(%s) AND target != ALL(%s)";
+    WHERE source = ANY(%s) AND target = ANY(%s)";
     
     // Components of the residual network
     comp_sql = "SELECT component, array_agg(node) AS vids \

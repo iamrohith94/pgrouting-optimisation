@@ -17,7 +17,7 @@ d['conn'] = conn
 cur = conn.cursor()
 num_levels = int(sys.argv[2])
 width = 0.25
-comp_query = "SELECT min(size), avg(size), max(size) FROM (SELECT count(*) AS size FROM %s WHERE component_%s != 1 GROUP BY component_%s) AS foo"
+comp_query = "SELECT min(size), avg(size), max(size) FROM (SELECT count(*) AS size FROM %s WHERE component_%s != 1 GROUP BY abs(component_%s)) AS foo"
 size_query = "SELECT count(*) FROM %s"
 
 

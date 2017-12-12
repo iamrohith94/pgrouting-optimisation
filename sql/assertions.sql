@@ -69,7 +69,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| edge_table ||' GROUP BY component_'||level||') as foo;';
+		|| edge_table ||' GROUP BY abs(component_'||level||')) as foo;';
 		EXECUTE count_sql INTO level_edges;
 		ASSERT level_edges = total_edges;
 	END LOOP;
@@ -95,7 +95,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| vertex_table ||' GROUP BY component_'||level||') as foo;';
+		|| vertex_table ||' GROUP BY abs(component_'||level||')) as foo;';
 		EXECUTE count_sql INTO level_vertices;
 		ASSERT level_vertices = total_vertices;
 	END LOOP;
