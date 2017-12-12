@@ -7,7 +7,7 @@
 int main(int argc, char *argv[])
 {
 	std::string conn_str, temp, dbname, edge_table, vertex_table, comp_sql, residue_sql,
-	skeletal_v_update_sql, non_skeletal_v_update_sql, cut_e_update_sql, 
+	skeletal_v_update_sql, non_skeletal_v_update_sql, cut_e_update_sql,  skeletal_e_update_sql, 
 	non_skeletal_e_update_sql, edges_sql, non_skeletal_v_sql, non_skeletal_vertices;
 	edge_table = "cleaned_ways";
 	vertex_table = "cleaned_ways_vertices_pgr";
@@ -24,11 +24,16 @@ int main(int argc, char *argv[])
 		num_levels = 10;
 	
 
-	// Updates the components for skeletal vertices
+	// Updates the component id for skeletal vertices
     skeletal_v_update_sql = "UPDATE %s \
     SET component_%s = 1 \
     FROM %s AS edges \
     WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.promoted_level <= %s;";
+
+    // Updates the component id for skeletal edges
+    skeletal_e_update_sql = "UPDATE %s \
+    SET component_%s = 1 \
+    WHERE promoted_level <= %s;";
 
     // Vertices other than skeleton
     non_skeletal_v_sql = "SELECT array_agg(id) FROM %s WHERE component_%s != 1";
@@ -99,6 +104,12 @@ int main(int argc, char *argv[])
 					%edge_table %vertex_table %vertex_table %i).str();
 				W.exec( temp.c_str() );
 				W.commit();
+
+				// Update the edges of skeleton
+				pqxx::work N0(C);
+				temp = (boost::format(skeletal_e_update_sql) %edge_table %i %i).str();
+				N0.exec( temp.c_str() );
+				N0.commit();
 
 				//Fetching the non skeletal vertices
 				pqxx::work N1(C);
