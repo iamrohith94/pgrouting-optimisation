@@ -32,7 +32,8 @@ int main(int argc, char *argv[])
     // All edges except skeletal edges and edges connecting the skeleton
     residue_sql = "SELECT ways.id, ways.source, ways.target, ways.cost \
     FROM %s AS ways,%s AS vertices \
-    WHERE NOT ((ways.source = vertices.id OR ways.target = vertices.id) AND vertices.component_%s = 1)";
+    WHERE NOT ((ways.source = vertices.id OR ways.target = vertices.id) AND vertices.component_%s = 1)
+    GROUP BY ways.id, ways.source, ways.target, ways.cost";
     
     // Components of the residual network
     comp_sql = "SELECT component, array_agg(node) AS vids \
