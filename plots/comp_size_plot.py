@@ -15,7 +15,7 @@ d["table_v"] = table_v
 conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
-num_levels = 10
+num_levels = int(sys.argv[2])
 width = 0.25
 comp_query = "SELECT min(size), avg(size), max(size) FROM (SELECT count(*) AS size FROM %s WHERE component_%s != 1 GROUP BY component_%s) AS foo"
 size_query = "SELECT count(*) FROM %s"
@@ -50,7 +50,7 @@ for i in levels:
                 max_sizes.append(float(row[2])*100.00/(E*1.00));
 
 
-fig, ax = plt.subplots(figsize=(10,num_levels/2))
+fig, ax = plt.subplots(figsize=(10,5))
 
 for i in levels:
         plt.bar(pos, 
