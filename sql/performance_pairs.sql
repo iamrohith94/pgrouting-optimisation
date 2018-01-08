@@ -1,3 +1,18 @@
+DROP TABLE IF EXISTS performance_analysis_2;
+
+/* performance table */
+CREATE TABLE level_wise_performance(
+	source 				BIGINT 	 NOT NULL,
+	target                          BIGINT   NOT NULL,
+	level 				INTEGER  NOT NULL,
+	qset 				INTEGER NOT NULL,
+    	num_edges 			BIGINT NOT NULL,
+    	num_vertices 			BIGINT NOT NULL,
+    	graph_build_time 		FLOAT NOT NULL,
+    	avg_computation_time 		FLOAT NOT NULL,
+    	path_len 			FLOAT NOT NULL
+);
+
 CREATE OR REPLACE FUNCTION getMaxDistancePair(
 	vertex_table TEXT,
     OUT source BIGINT,
@@ -98,7 +113,7 @@ distance_bucket FLOAT;
 bucket INTEGER;
 temp_record RECORD;
 BEGIN
-	pairs_iteration := 100;
+	pairs_iteration := 20;
 	edges_query := 'SELECT id, source, target, cost FROM %s';
 	distance_query := 'SELECT agg_cost FROM pgr_dijkstra(%s, %s, %s) order by agg_cost desc limit 1;';
 	EXECUTE format('SELECT source, target FROM getMaxDistancePair(%s)', quote_literal(vertex_table)) INTO max_source, max_target;
@@ -148,8 +163,11 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 
 CREATE OR REPLACE FUNCTION getLevelWisePerformanceAnalysis(
 	edge_table TEXT,
+	scc_table TEXT,
 	vertex_table TEXT,
 	max_level INTEGER,
+--	pairs_per_set INTEGER,
+--	num_sets INTEGER,
     OUT source BIGINT,
     OUT target BIGINT,
     OUT level INTEGER,
@@ -168,12 +186,17 @@ zone_sql TEXT;
 final_sql TEXT;
 source_comp INTEGER;
 target_comp INTEGER;
+count INTEGER;
 BEGIN
+	RAISE NOTICE 'Started computing for levels';	
 	zone_sql := 'SELECT component_%s FROM %s WHERE id = %s';
-
+	count := 0;
+	-- FOR temp_record IN SELECT * FROM getPairsForPerformanceAnalysis(edge_table, scc_table, vertex_table, pairs_per_set, num_sets) LOOP
+	-- 	RETURN QUERY SELECT temp_record.source, temp_record.target, 0, temp_record.qset, temp_record.num_edges,
+    --                             temp_record.num_vertices, temp_record.graph_build_time, temp_record.avg_computation_time, temp_record.path_len;
 	FOR level in 1 .. max_level LOOP
 		RAISE NOTICE 'level %', level;
-		FOR temp_record IN SELECT * FROM performance_analysis LOOP
+		FOR temp_record IN SELECT * FROM performance_analysis_2 LOOP
 			EXECUTE format(zone_sql, level, vertex_table, temp_record.source) INTO source_comp;
 			EXECUTE format(zone_sql, level, vertex_table, temp_record.target) INTO target_comp;
 
@@ -189,11 +212,14 @@ BEGIN
 			a.graph_build_time, a.avg_computation_time, a.path_len 
 			FROM (SELECT * FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra'::TEXT, ARRAY[temp_record.source]::BIGINT[], ARRAY[temp_record.target]::BIGINT[])) AS a;
 		END LOOP;
+		-- RAISE NOTICE 'count %', count;
+		-- count := count + 1;
 	END LOOP;
 END
 $body$ language plpgsql volatile;
 
-SELECT * INTO performance_analysis from getpairsforperformanceanalysis('cleaned_ways', 'scc_ways', 'cleaned_ways_vertices_pgr', 10, 10);
 
-INSERT INTO performance_analysis
-SELECT * FROM getLevelWisePerformanceAnalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 10);
+SELECT * INTO performance_analysis_2 from getpairsforperformanceanalysis('cleaned_ways', 'scc_ways', 'cleaned_ways_vertices_pgr', 1, 10);
+	
+INSERT INTO performance_analysis_2
+SELECT * FROM getLevelWisePerformanceAnalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 8);
