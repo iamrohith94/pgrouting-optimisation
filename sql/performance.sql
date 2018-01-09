@@ -54,7 +54,7 @@ BEGIN
         IF level = num_levels THEN
             final_sql = 'SELECT id, source, target, cost FROM ' || edge_table;
             RETURN QUERY SELECT a.source, a.target, level, a.num_edges, a.num_vertices,
-                a.graph_build_time, a.avg_computation_time, a.path_len 
+                a.edges_read_time, a.graph_build_time, a.avg_computation_time, a.path_len 
                 FROM (SELECT * FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra', start_vids, end_vids, num_iterations, directed)) AS a;
         ELSE 
             FOR i in 1 .. array_upper(start_vids, 1)
@@ -73,10 +73,10 @@ BEGIN
                 EXECUTE target_sql INTO target_comp;
 
                 final_sql := 'SELECT id, source, target, cost FROM '
-                || edge_table || ' WHERE promoted_level <= '|| level ||' OR component_'|| level ||' = ' 
-                || source_comp || ' OR component_'|| level ||' = ' || target_comp;
+                || edge_table || ' WHERE ABS(component_'|| level ||') = 1 OR ABS(component_'|| level ||') = ' 
+                || source_comp || ' OR ABS(component_'|| level ||') = ' || target_comp;
                 RETURN QUERY SELECT a.source, a.target, level, a.num_edges, a.num_vertices,
-                a.graph_build_time, a.avg_computation_time, a.path_len 
+                a.edges_read_time, a.graph_build_time, a.avg_computation_time, a.path_len 
                 FROM (SELECT * FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra'::TEXT, ARRAY[source]::BIGINT[], ARRAY[target]::BIGINT[], num_iterations, directed)) AS a;
             END LOOP;
         END IF;

@@ -137,7 +137,7 @@ BEGIN
     			IF count_qset[bucket] > 0 THEN
     				count_qset[bucket] := count_qset[bucket] - 1;
     				RETURN QUERY SELECT temp_record.source, temp_record.target, 0, bucket, temp_record.num_edges, 
-    				temp_record.num_vertices, temp_record.graph_build_time, 
+    				temp_record.num_vertices, temp.edges_read_time, temp_record.graph_build_time, 
     				temp_record.avg_computation_time, temp_record.path_len;
     			END IF;
     		END IF;
@@ -209,7 +209,7 @@ BEGIN
 			|| edge_table || ' WHERE ABS(component_'|| level ||') = 1 OR ABS(component_'|| level ||') = ' 
 			|| source_comp || ' OR ABS(component_'|| level ||') = ' || target_comp;
 			RETURN QUERY SELECT a.source, a.target, level, temp_record.qset, a.num_edges, a.num_vertices,
-			a.graph_build_time, a.avg_computation_time, a.path_len 
+			a.edges_read_time, a.graph_build_time, a.avg_computation_time, a.path_len 
 			FROM (SELECT * FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra'::TEXT, ARRAY[temp_record.source]::BIGINT[], ARRAY[temp_record.target]::BIGINT[])) AS a;
 		END LOOP;
 		-- RAISE NOTICE 'count %', count;
