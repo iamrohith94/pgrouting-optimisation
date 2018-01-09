@@ -14,6 +14,7 @@ CREATE OR REPLACE FUNCTION performanceAnalysis(
     OUT level INTEGER,
     OUT num_edges BIGINT,
     OUT num_vertices BIGINT,
+    OUT edges_read_time FLOAT,
     OUT graph_build_time FLOAT,
     OUT avg_computation_time FLOAT,
     OUT path_len FLOAT)
