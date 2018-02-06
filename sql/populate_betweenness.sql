@@ -6,7 +6,7 @@ CREATE TEMP TABLE tmp (
    level             INTEGER
 );
 
-COPY tmp FROM '/home/rohithreddy/mystuff/research/pgrouting-optimisation/data/sample_data_betweenness.csv' delimiter ',' csv;
+COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/nyc_betweenness.csv' delimiter ',' csv;
 CREATE INDEX results_index ON tmp(id);
 
 UPDATE cleaned_ways
