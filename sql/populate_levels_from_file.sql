@@ -7,7 +7,7 @@ CREATE TEMP TABLE tmp (
    level             INTEGER
 );
 
-COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/nyc_geom_conn_edges.csv' delimiter ',' csv;
+COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/melbourne_geom_conn_edges.csv' delimiter ',' csv;
 
 SELECT id, source, target, min(level) AS level INTO final_tmp FROM tmp GROUP BY id, source, target;
 

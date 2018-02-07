@@ -26,10 +26,11 @@ BEGIN
 	LOOP
 		g_id := grid_info.grid_id;
 		v_count := grid_info.vertex_count;
-		-- RAISE NOTICE 'grid id %', g_id;
-		-- RAISE NOTICE 'vertex count %', v_count;
+		RAISE NOTICE 'grid id %', g_id;
+		RAISE NOTICE 'vertex count %', v_count;
 		--EXECUTE 'SELECT POWER(v_count, expo) INTO per_grid_count;
 		per_grid_count := POWER(v_count, expo);
+		RAISE NOTICE 'per grid count %', per_grid_count;
 		EXECUTE format(vertices_sql, vertex_table, g_id, per_grid_count) INTO temp_grid_vids;
 		-- RAISE NOTICE 'temp grid vids %', temp_grid_vids;
 		total_grid_vids = temp_grid_vids || total_grid_vids; 

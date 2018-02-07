@@ -380,7 +380,8 @@ int dump_to_file_group_by_id(const Graph &g, std::map<long int, Graph::edge_desc
 
     for (it = edge_id_levels.begin(); it != edge_id_levels.end(); ++it) {
     	myfile << it->first << delimiter 
-    	<< it->second << std::endl;
+    	<< it->second << delimiter 
+    	<< edge_id_betweenness[it->first] << std::endl;
     	//<< comp_init << std::endl;
     }
     myfile.close();

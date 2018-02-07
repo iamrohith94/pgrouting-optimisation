@@ -86,7 +86,8 @@ SELECT AddGeometryColumn('cleaned_ways', 'the_geom', 0, 'LINESTRING', 2 );
 SELECT AddGeometryColumn('cleaned_ways_vertices_pgr', 'the_geom', 0, 'POINT', 2 );
 
 /* Generating the cleaned vertex table by selecting edges of the largest component */
-INSERT INTO cleaned_ways_vertices_pgr(id) 
+INSERT INTO cleaned_ways_vertices_pgr(id)
+--SELECT id FROM ways_vertices_pgr; 
 SELECT unnest(array_agg(node)) 
 FROM pgr_strongComponents('select gid as id, source, target, cost, reverse_cost from ways') 
 WHERE component = (SELECT component FROM pgr_strongComponents('select gid as id, source, target, cost, reverse_cost from ways') 
