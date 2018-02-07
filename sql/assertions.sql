@@ -135,9 +135,31 @@ END;
 $BODY$
 LANGUAGE plpgsql VOLATILE STRICT;
 
+CREATE OR REPLACE FUNCTION assert_skeletal_parent(
+	vertex_table TEXT,
+	num_levels INTEGER)
+RETURNS VOID AS
+$BODY$
+DECLARE
+vertices_sql TEXT;
+level INTEGER;
+total_vertices INTEGER;
+BEGIN
+	vertices_sql := 'SELECT count(*) FROM %s WHERE skeletal_parent_%s = -1 AND id = parent';
+	FOR level IN 1..num_levels
+	LOOP 
+		--RAISE NOTICE '%', level;
+		EXECUTE format(vertices_sql, vertex_table, level) INTO total_vertices;
+		ASSERT total_vertices = 0;
+	END LOOP;
+END;
+$BODY$
+LANGUAGE plpgsql VOLATILE STRICT;
+
 
 SELECT assert_skeleton_strongly_connected('cleaned_ways', :num_levels);
 SELECT assert_unassigned_component('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
 --SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
 SELECT assert_edge_count('cleaned_ways', :num_levels);
 SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);
+SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);

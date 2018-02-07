@@ -7,7 +7,21 @@ CREATE TEMP TABLE tmp (
    betweenness       DOUBLE PRECISION        DEFAULT 0.00
 );
 
-COPY tmp FROM '/home/vrgeo/rohith/research/pgrouting-optimisation/data/melbourne_betweenness.csv' delimiter ',' csv;
+SET file.name to :db;
+--SHOW file.name;
+
+DO $$
+DECLARE 
+file_path TEXT;
+file_name TEXT;
+BEGIN
+	file_name := current_setting('file.name');
+	file_path := format('/home/vrgeo/rohith/research/pgrouting-optimisation/data/%s_betweenness.csv', file_name);
+	RAISE NOTICE '%', file_path;    
+	EXECUTE format('COPY tmp FROM %s delimiter '||quote_literal(',')||' csv', quote_literal(file_path));
+END$$;
+
+
 CREATE INDEX results_index ON tmp(id);
 
 UPDATE cleaned_ways
