@@ -10,12 +10,12 @@ from cycler import cycler
 db = sys.argv[1]
 table_e = 'cleaned_ways'
 table_v = 'cleaned_ways_vertices_pgr'
-performance_table = 'level_wise_performance'
+performance_table = 'performance_analysis'
 d = {}
 d["db"] = db
 d["table_e"] = table_e
 d["table_v"] = table_v
-conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
+conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="localhost", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
 num_levels = 10
@@ -31,7 +31,7 @@ actual_distances_map = {}
 
 approx_dist_query = "SELECT qset, path_len FROM %s WHERE level = %s ORDER BY qset, source, target"
 
-cur.execute(approx_dist_query, (AsIs(performance_table), 0,));
+cur.execute(approx_dist_query, (AsIs(performance_table), 10,));
 rows = cur.fetchall();
 for row in rows:
 	try:

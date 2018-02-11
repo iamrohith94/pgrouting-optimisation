@@ -101,7 +101,7 @@ BEGIN
 	FOR i in 0..$4-1 LOOP	
 	
 		FOR j in 0..$5-1 LOOP
-			sw :=  (SELECT ST_PointAtDist($1, i*unit_grid_l*0.85));
+			sw :=  (SELECT ST_PointAtDist($1, i*unit_grid_l));
 			sw :=  (SELECT ST_PointAtDist(sw, j*unit_grid_b, 0));
 			nw :=  (SELECT ST_PointAtDist(sw, unit_grid_b, 0));
 			ne :=  (SELECT ST_PointAtDist(nw, unit_grid_l));

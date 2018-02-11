@@ -1,18 +1,22 @@
-DROP TABLE IF EXISTS performance_analysis_2;
+--DROP TABLE IF EXISTS performance_analysis;
+DROP FUNCTION IF EXISTS getpairsforperformanceanalysis(text,text,integer,integer);
+DROP FUNCTION IF EXISTS getlevelwiseperformanceanalysis(text,text,integer);
 
-/* performance table */
-CREATE TABLE level_wise_performance(
-	source 				BIGINT 	 NOT NULL,
-	target                          BIGINT   NOT NULL,
-	level 				INTEGER  NOT NULL,
-	qset 				INTEGER NOT NULL,
-    	num_edges 			BIGINT NOT NULL,
-    	num_vertices 			BIGINT NOT NULL,
-    	graph_build_time 		FLOAT NOT NULL,
-    	avg_computation_time 		FLOAT NOT NULL,
-    	path_len 			FLOAT NOT NULL
+-- Table to store performance results level wise
+CREATE TABLE IF NOT EXISTS performance_analysis(
+	source 					BIGINT 	 NOT NULL,
+	target              	BIGINT   NOT NULL,
+	level 					INTEGER  NOT NULL,
+	qset 					INTEGER NOT NULL,
+	num_edges 				BIGINT NOT NULL,
+	num_vertices 			BIGINT NOT NULL,
+	edge_read_time 		FLOAT NOT NULL,
+	graph_build_time 		FLOAT NOT NULL,
+	avg_computation_time 	FLOAT NOT NULL,
+	path_len 				FLOAT NOT NULL
 );
 
+-- Function that fetches the farthest vertex pair
 CREATE OR REPLACE FUNCTION getMaxDistancePair(
 	vertex_table TEXT,
     OUT source BIGINT,
@@ -60,6 +64,8 @@ BEGIN
 END
 $body$ language plpgsql volatile;
 
+-- Checks if all the array values are 0
+-- Returns false even if one array value is non zero
 CREATE OR REPLACE FUNCTION check_termination(
 	count BIGINT[])
 RETURNS BOOLEAN AS
@@ -76,21 +82,21 @@ BEGIN
 END
 $body$ language plpgsql volatile;
 
-
-
-
+-- A function that fetches source target pairs based on the distance between them
+-- It outputs the cost between the source and target on the entire network
 CREATE OR REPLACE FUNCTION getPairsForPerformanceAnalysis(
-	cleaned_edge_table TEXT,
-	scc_edge_table TEXT,
+	cleaned_edge_table TEXT, -- Edge table after dead end contraction
+	--scc_edge_table TEXT, -- Edge table before dead end contraction
 	vertex_table TEXT,
-    pairs_per_set INTEGER,
-    num_sets INTEGER,
+    pairs_per_set INTEGER, -- Number of pairs per set
+    num_sets INTEGER, 	   -- Number of sets
     OUT source BIGINT,
     OUT target BIGINT,
     OUT level INTEGER,
     OUT qset INTEGER,
     OUT num_edges BIGINT,
     OUT num_vertices BIGINT,
+    OUT edge_read_time FLOAT,
     OUT graph_build_time FLOAT,
     OUT avg_computation_time FLOAT,
     OUT path_len FLOAT
@@ -122,22 +128,25 @@ BEGIN
 	RAISE NOTICE 'num_sets %', num_sets;
 	RAISE NOTICE 'pairs_per_set %', pairs_per_set;
 	distance_bucket = max_distance*1.000/num_sets;
+
+	-- Initialising the counts for each query set
 	FOR i in 1 .. num_sets LOOP
 		count_qset = count_qset || pairs_per_set;
 	END LOOP;
 
+	-- Running the loop until all the query sets are filled
 	WHILE NOT check_termination(count_qset) LOOP
 		EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||'  WHERE id = parent ORDER BY RANDOM() LIMIT '||pairs_iteration||')' INTO start_vids;
     	EXECUTE 'SELECT ARRAY(SELECT id FROM '|| vertex_table ||'  WHERE id = parent ORDER BY RANDOM() LIMIT '||pairs_iteration||')' INTO end_vids;
     	-- run performance analysis on source, target pairs and get the path_len
-    	FOR temp_record IN SELECT * FROM pgr_performanceAnalysis(format(edges_query, scc_edge_table), 'pgr_dijkstra', start_vids, end_vids) LOOP
+    	FOR temp_record IN SELECT * FROM pgr_performanceAnalysis(format(edges_query, cleaned_edge_table), 'pgr_dijkstra', start_vids, end_vids) LOOP
     		bucket = CEIL(temp_record.path_len/distance_bucket);
 			--RAISE NOTICE 'bucket %', bucket;
     		IF bucket < num_sets+1 THEN
     			IF count_qset[bucket] > 0 THEN
     				count_qset[bucket] := count_qset[bucket] - 1;
-    				RETURN QUERY SELECT temp_record.source, temp_record.target, 0, bucket, temp_record.num_edges, 
-    				temp_record.num_vertices, temp.edges_read_time, temp_record.graph_build_time, 
+    				RETURN QUERY SELECT temp_record.source, temp_record.target, 10, bucket, temp_record.num_edges, 
+    				temp_record.num_vertices, temp_record.edges_read_time, temp_record.graph_build_time, 
     				temp_record.avg_computation_time, temp_record.path_len;
     			END IF;
     		END IF;
@@ -163,17 +172,16 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 
 CREATE OR REPLACE FUNCTION getLevelWisePerformanceAnalysis(
 	edge_table TEXT,
-	scc_table TEXT,
+	--scc_table TEXT,
 	vertex_table TEXT,
 	max_level INTEGER,
---	pairs_per_set INTEGER,
---	num_sets INTEGER,
     OUT source BIGINT,
     OUT target BIGINT,
     OUT level INTEGER,
     OUT qset INTEGER,
     OUT num_edges BIGINT,
     OUT num_vertices BIGINT,
+    OUT edge_read_time FLOAT,
     OUT graph_build_time FLOAT,
     OUT avg_computation_time FLOAT,
     OUT path_len FLOAT
@@ -189,14 +197,18 @@ target_comp INTEGER;
 count INTEGER;
 BEGIN
 	RAISE NOTICE 'Started computing for levels';	
-	zone_sql := 'SELECT component_%s FROM %s WHERE id = %s';
+	zone_sql := 'SELECT ABS(component_%s) FROM %s WHERE id = %s';
 	count := 0;
-	-- FOR temp_record IN SELECT * FROM getPairsForPerformanceAnalysis(edge_table, scc_table, vertex_table, pairs_per_set, num_sets) LOOP
-	-- 	RETURN QUERY SELECT temp_record.source, temp_record.target, 0, temp_record.qset, temp_record.num_edges,
-    --                             temp_record.num_vertices, temp_record.graph_build_time, temp_record.avg_computation_time, temp_record.path_len;
-	FOR level in 1 .. max_level LOOP
+	
+	FOR level in 1 .. max_level 
+	LOOP
 		RAISE NOTICE 'level %', level;
-		FOR temp_record IN SELECT * FROM performance_analysis_2 LOOP
+		FOR temp_record IN SELECT foo.source, foo.target, foo.qset 
+		FROM (SELECT pa.source AS source, pa.target AS target, pa.qset AS qset, count(*) AS count 
+		FROM performance_analysis AS pa 
+		GROUP BY pa.source, pa.target, pa.qset) AS foo 
+		WHERE foo.count = 1
+		LOOP
 			EXECUTE format(zone_sql, level, vertex_table, temp_record.source) INTO source_comp;
 			EXECUTE format(zone_sql, level, vertex_table, temp_record.target) INTO target_comp;
 
@@ -205,12 +217,16 @@ BEGIN
 
 			--RAISE NOTICE 'source_comp %', source_comp;
 			--RAISE NOTICE 'target_comp %', target_comp;
+
 			final_sql := 'SELECT id, source, target, cost FROM '
 			|| edge_table || ' WHERE ABS(component_'|| level ||') = 1 OR ABS(component_'|| level ||') = ' 
 			|| source_comp || ' OR ABS(component_'|| level ||') = ' || target_comp;
-			RETURN QUERY SELECT a.source, a.target, level, temp_record.qset, a.num_edges, a.num_vertices,
+
+			RETURN QUERY 
+			SELECT a.source, a.target, level, temp_record.qset, a.num_edges, a.num_vertices,
 			a.edges_read_time, a.graph_build_time, a.avg_computation_time, a.path_len 
-			FROM (SELECT * FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra'::TEXT, ARRAY[temp_record.source]::BIGINT[], ARRAY[temp_record.target]::BIGINT[])) AS a;
+			FROM (SELECT * 
+			FROM pgr_performanceAnalysis(final_sql, 'pgr_dijkstra'::TEXT, ARRAY[temp_record.source]::BIGINT[], ARRAY[temp_record.target]::BIGINT[])) AS a;
 		END LOOP;
 		-- RAISE NOTICE 'count %', count;
 		-- count := count + 1;
@@ -218,8 +234,10 @@ BEGIN
 END
 $body$ language plpgsql volatile;
 
+-- Storing the vertex pairs based on distance
+INSERT INTO performance_analysis 
+SELECT * FROM getpairsforperformanceanalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 1, 5);
 
-SELECT * INTO performance_analysis_2 from getpairsforperformanceanalysis('cleaned_ways', 'scc_ways', 'cleaned_ways_vertices_pgr', 1, 10);
-	
-INSERT INTO performance_analysis_2
+-- Storing the path cost between the vertex pair for all levels
+INSERT INTO performance_analysis 
 SELECT * FROM getLevelWisePerformanceAnalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 8);

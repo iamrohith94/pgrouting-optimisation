@@ -10,26 +10,26 @@ from cycler import cycler
 db = sys.argv[1]
 table_e = 'cleaned_ways'
 table_v = 'cleaned_ways_vertices_pgr'
-performance_table = 'level_wise_performance'
+performance_table = 'performance_analysis'
 d = {}
 d["db"] = db
 d["table_e"] = table_e
 d["table_v"] = table_v
-conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
+conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="localhost", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
 num_levels = 10
 num_intervals = 5
 width = 0.15
 
-levels = [0, 2, 3, 4, 6]
+levels = [10, 2, 3, 4, 6]
 
 
 monochrome = (cycler('color', ['k']) * cycler('linestyle', ['--', '-', '-', '-', '-', '-']) + cycler('marker', ['', 's','o', 'x', '^', 'D' ]))
 
 avg_computation_time = []
 
-avg_time_query = "SELECT qset, avg(avg_computation_time) FROM %s WHERE level = %s GROUP BY qset ORDER BY qset"
+avg_time_query = "SELECT qset, avg(graph_build_time) FROM %s WHERE level = %s GROUP BY qset ORDER BY qset"
 
 
 fig, ax = plt.subplots(1,1)
@@ -63,4 +63,4 @@ ax.set_xlabel('$\it{Q}$', fontsize=20)
 ax.xaxis.set_tick_params(length=1)
 
 plt.tight_layout()
-plt.savefig('./images/'+db+'_path_time_'+str(num_levels)+'.png', facecolor='white')
+plt.savefig('./images/'+db+'_build_time_'+str(num_levels)+'.png', facecolor='white')

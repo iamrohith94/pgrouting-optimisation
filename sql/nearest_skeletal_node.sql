@@ -16,17 +16,25 @@ component RECORD;
 component_vertex RECORD;
 skeletal_vertices BIGINT[];
 BEGIN
+	-- Fetches vertices component wise excluding skeleton
 	component_sql := 'SELECT component_%s AS id, array_agg(id)::BIGINT[] AS vertices 
 	FROM %s 
 	WHERE component_%s != 1 GROUP BY component_%s';
+
+	-- Fetch geometry of a vertex based on its component
 	component_vertices_sql := 'SELECT id, ST_AsText(the_geom) AS the_geom FROM %s WHERE component_%s = %s AND parent = id';
+	
+	-- Fetches skeletal vertices of a component
 	skeletal_vertices_sql := 'SELECT array_agg(foo.id) FROM 
 	(SELECT source AS id FROM %s WHERE -component_%s = %s AND target = ANY(%s::BIGINT[])
 	UNION
 	SELECT target AS id FROM %s WHERE -component_%s = %s AND source = ANY(%s::BIGINT[])) AS foo';
+	
+	-- Update the skeletal parents
 	update_sql := 'UPDATE %s SET skeletal_parent_%s = 
 	(SELECT foo.id FROM %s AS foo WHERE foo.id = ANY(%s::BIGINT[]) ORDER BY ST_Distance(ST_GeomFromText(%s,4326), foo.the_geom) LIMIT 1) 
 	WHERE id = %s AND id = parent';
+
 	FOR level IN 1..num_levels
 	LOOP 
 		RAISE NOTICE 'Level: %',level;

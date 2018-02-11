@@ -101,7 +101,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| edge_table ||' GROUP BY abs(component_'||level||')) as foo;';
+		|| edge_table ||' GROUP BY ABS(component_'||level||')) as foo;';
 		EXECUTE count_sql INTO level_edges;
 		ASSERT level_edges = total_edges;
 	END LOOP;
@@ -127,7 +127,7 @@ BEGIN
 	FOR level IN 1..num_levels
 	LOOP 
 		count_sql := 'SELECT SUM(foo.counts) FROM (SELECT count(*) as counts from '
-		|| vertex_table ||' GROUP BY abs(component_'||level||')) as foo;';
+		|| vertex_table ||' GROUP BY ABS(component_'||level||')) as foo;';
 		EXECUTE count_sql INTO level_vertices;
 		ASSERT level_vertices = total_vertices;
 	END LOOP;
@@ -157,9 +157,57 @@ $BODY$
 LANGUAGE plpgsql VOLATILE STRICT;
 
 
+CREATE OR REPLACE FUNCTION assert_component_connectivity(
+	edge_table TEXT,
+	vertex_table TEXT,
+	num_levels INTEGER)
+RETURNS VOID AS
+$BODY$
+DECLARE
+component RECORD;
+component_sql TEXT;
+component_vertices_sql TEXT;
+component_edges_sql TEXT;
+comp_count_sql TEXT;
+level INTEGER;
+component_vertices BIGINT[];
+comp_count INTEGER;
+BEGIN
+	-- Fetches All vertices of extended component(component + skeletal nodes)
+	component_vertices_sql := 'SELECT source AS id FROM %s WHERE ABS(component_%s) = %s 
+	UNION 
+	SELECT target AS id FROM %s WHERE ABS(component_%s) = %s';
+
+	-- Fetches component ids at a level
+	component_sql := 'SELECT comp_id FROM (SELECT ABS(component_%s) AS comp_id, array_length(array_agg(id), 1) AS comp_length FROM %s 
+		WHERE ABS(component_%s) != 1  GROUP BY ABS(component_%s)) AS foo WHERE foo.comp_length > 2';
+
+	-- Fetches all edges of a component
+	component_edges_sql := 'SELECT id, source, target, cost FROM %s WHERE component_%s = %s';
+
+	-- Fetches the number of strongly connected components of the given component
+	comp_count_sql := 'SELECT count(DISTINCT(component)) FROM pgr_strongComponents(%s);';
+
+	FOR level IN 1..num_levels
+	LOOP 
+		RAISE NOTICE '%', level;
+		FOR component IN EXECUTE format(component_sql, level, vertex_table, level, level)
+		LOOP
+			RAISE NOTICE 'Component %', component.comp_id;
+			EXECUTE format(comp_count_sql, 
+				quote_literal(format(component_edges_sql,
+					edge_table, level, component.comp_id))) INTO comp_count;
+			ASSERT comp_count = 1 OR comp_count = 0;
+		END LOOP;
+	END LOOP;
+END;
+$BODY$
+LANGUAGE plpgsql VOLATILE STRICT;
+
 SELECT assert_skeleton_strongly_connected('cleaned_ways', :num_levels);
 SELECT assert_unassigned_component('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
 --SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
 SELECT assert_edge_count('cleaned_ways', :num_levels);
 SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);
-SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);
+--SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);
+--SELECT assert_component_connectivity('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
