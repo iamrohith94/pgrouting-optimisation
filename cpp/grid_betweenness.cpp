@@ -30,12 +30,12 @@ void get_vector_from_string(std::string array_string, std::vector<long int> &v) 
 
 void get_betweenness_vertices_from_db(std::string dbname, 
 	std::string vertex_table,
-	int k, int p, std::vector<long int>& v) {
+	int p, std::vector<long int>& v) {
 	
 	std::string conn_str = "dbname = %s user = postgres password = postgres \
 	hostaddr = 127.0.0.1 port = 5432";
 	conn_str = (boost::format(conn_str) % dbname).str().c_str();
-	std::string array_sql = "SELECT * FROM grid_betweenness_pairs(%s, %s, %s)";
+	std::string array_sql = "SELECT * FROM grid_betweenness_pairs(%s, %s)";
 	
 	
 	try {
@@ -43,7 +43,7 @@ void get_betweenness_vertices_from_db(std::string dbname,
 		if (C.is_open()) {
 			pqxx::work N(C);
 			array_sql = (boost::format(array_sql) 
-			%N.quote(vertex_table) % k % p).str();
+			%N.quote(vertex_table) %p).str();
 			pqxx::result R2( N.exec( array_sql.c_str() ));
 			for (pqxx::result::const_iterator c = R2.begin(); c != R2.end(); ++c) {
 				get_vector_from_string(c[0].as<std::string>(), v);
@@ -102,15 +102,13 @@ int main(int argc, char* argv[]) {
 		std::cout << "Enter file name" << std::endl;
 		return 0;
 	}
-	int num_levels;
-	if (argc == 3)
-		num_levels = std::atoi(argv[2]);
-	else
-		num_levels = 10;
+	string dbname = argv[1]; 
+	int num_levels = std::atoi(argv[2]);
+	int exponent = std::atoi(argv[3]);
+
 	std::string vertex_table = "cleaned_ways_vertices_pgr";
 	std::vector<long int> vertices;
 	std::vector<std::pair<long int, long int> > st_pairs;
-	string dbname = argv[1]; 
 	std::string s;
 	int flag;
 	double start_t, end_t;
@@ -131,7 +129,7 @@ int main(int argc, char* argv[]) {
 
 	if (flag == 1) {
 
-		get_betweenness_vertices_from_db(dbname, vertex_table, 4, 4, vertices);
+		get_betweenness_vertices_from_db(dbname, vertex_table, exponent, vertices);
 		#if 0
 		std::cout << "Vertices: " << std::endl;
 		for (int i = 0; i < vertices.size(); ++i) {
@@ -154,76 +152,6 @@ int main(int argc, char* argv[]) {
 		std::cout << "Error printing graph" << std::endl;
 		return 0;
 	}
-
-	#if 0
-	if (world.rank() == 0) {
-		std::string s; 
-		std::ostringstream oss;
-
-		std::vector<long int> vertices;
-
-		//Constructing the graph from csv file
-		flag = construct_graph_from_file(dbname, ',', g, id_to_V, id_to_E);
-
-
-		if (flag == 1) {
-
-			get_betweenness_vertices_from_db(dbname, vertex_table, 4, 4, vertices);
-			std::cout << "Vertices: " << std::endl;
-			for (int i = 0; i < vertices.size(); ++i) {
-				std::cout << vertices[i] << ", ";
-			}
-			std::cout << std::endl;
-			get_pairs_from_vertices(vertices, st_pairs);
-			//std::cout << "Vertices: " << vertices.size() << std::endl;
-			//std::cout << "ST Pairs: " << st_pairs.size() 
-			//<< ", process: " << world.rank() << std::endl;
-
-			boost::archive::text_oarchive oa(oss);
-			oa << flag << g << id_to_E << id_to_V << st_pairs;
-			s = oss.str(); 
-			//Sending the graph to all other processes
-			boost::mpi::broadcast(world, s, 0);
-		}
-	}
-
-	else {
-		//Receiving the graph from the master
-		boost::mpi::broadcast(world, s, 0);
-		std::istringstream iss(s);
-		boost::archive::text_iarchive ia(iss);
-		ia >> flag;
-		ia >> g;
-		ia >> id_to_E;
-		ia >> id_to_V;
-		ia >> st_pairs;
-	}
-	#endif
-
-	//print_graph(g);
-	#if 0
-	std::cout << "Vertices: " << id_to_E.size() 
-		<< ", process: " << world.rank() << std::endl;
-	std::map<long int, Graph::vertex_descriptor>::iterator it;
-	for (it = id_to_V.begin(); it != id_to_V.end() ; ++it) {
-		std::cout << it->first 
-		<< ": (" << g[it->second].id << "), " 
-		<< ", process: " << world.rank() 
-		<< std::endl; 
-	}
-	#endif
-	#if 0
-	std::cout << "Edges: " << id_to_E.size() 
-		<< ", process: " << world.rank() << std::endl;
-	std::map<long int, Graph::edge_descriptor>::iterator it1;
-	for (it1 = id_to_E.begin(); it1 != id_to_E.end() ; ++it1) {
-		std::cout << it1->first 
-		<< ": (" << g[it1->second].source 
-		<< ", " << g[it1->second].target << ")" 
-		<< ", process: " << world.rank() 
-		<< std::endl; 
-	}
-	#endif
 
 	int bucket_size = st_pairs.size()/world.size();
 	int start = world.rank()*bucket_size;
@@ -261,9 +189,7 @@ int main(int argc, char* argv[]) {
 	}	
 	#endif
 
-
-	
-	 if (world.rank() == 0) {
+	if (world.rank() == 0) {
         boost::mpi::reduce(world, &individual_betweenness.front(), boost::num_edges(g), &total_betweenness.front(), std::plus<int>(), 0);
     	#if 0
         std::cout << "Final Betweenness values: " << total_betweenness.size() 

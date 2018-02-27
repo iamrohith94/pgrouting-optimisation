@@ -13,7 +13,7 @@ d = {}
 d["db"] = db
 d["table_e"] = table_e
 d["table_v"] = table_v
-conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
+conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="localhost", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
 num_levels = int(sys.argv[2])
@@ -50,6 +50,8 @@ fig, ax = plt.subplots(1,1)
 
 ax.grid(axis='y', markersize=10, linewidth='1', linestyle='--')  
 ax.set_axisbelow(True)
+
+print skeleton_sizes
 
 for i in levels:
         plt.bar(pos, 

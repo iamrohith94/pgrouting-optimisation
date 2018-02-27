@@ -14,7 +14,7 @@ d = {}
 d["db"] = db
 d["table_e"] = table_e
 d["table_v"] = table_v
-conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="10.2.16.78", port="5432")
+conn = psycopg2.connect(database=d['db'], user="postgres", password="postgres", host="localhost", port="5432")
 d['conn'] = conn
 cur = conn.cursor()
 num_levels = int(sys.argv[2])
@@ -51,6 +51,8 @@ for i in levels:
                 #min_sizes.append(float(row[0])*100.00/(E*1.00));
                 avg_sizes.append(float(row[1])*100.00/(E*1.00));
                 max_sizes.append(float(row[2])*100.00/(E*1.00));
+
+print max_sizes
 
 
 fig, ax = plt.subplots(1,1)

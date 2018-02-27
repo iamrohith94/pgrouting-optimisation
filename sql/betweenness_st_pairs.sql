@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION grid_betweenness_pairs(
 	vertex_table TEXT,
-	k INTEGER,
+	-- k INTEGER,
 	p INTEGER)
 RETURNS BIGINT[] AS
 

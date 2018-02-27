@@ -55,7 +55,7 @@ for level in levels:
 			approx_distances_map[row[0]].append(row[1])
 		except KeyError, e:
 			approx_distances_map[row[0]] = [row[1]]
-	print approx_distances_map
+	#print approx_distances_map
 	for k in approx_distances_map.keys():
 		diff = [(approx_distances_map[k][j] - actual_distances_map[k][j])*100.00/actual_distances_map[k][j] 
 				for j in range(len(approx_distances_map[k]))]

@@ -236,7 +236,7 @@ $body$ language plpgsql volatile;
 
 -- Storing the vertex pairs based on distance
 INSERT INTO performance_analysis 
-SELECT * FROM getpairsforperformanceanalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 1, 5);
+SELECT * FROM getpairsforperformanceanalysis('cleaned_ways', 'cleaned_ways_vertices_pgr', 300, 5);
 
 -- Storing the path cost between the vertex pair for all levels
 INSERT INTO performance_analysis 
