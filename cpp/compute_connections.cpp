@@ -54,6 +54,8 @@ int main(int argc, char const *argv[])
 	else
 		num_levels = 10;
 
+	// /std::cout << "arg 1 " << file_name << std::endl;
+
 
 	GGraph g;
 	std::map<long int, GGraph::vertex_descriptor> id_to_V;

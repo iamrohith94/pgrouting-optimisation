@@ -122,23 +122,23 @@ AND source IN (SELECT id FROM cleaned_ways_vertices_pgr) AND target IN
 
 
 -- Generating contraction results for vertices
-SELECT id AS parent, contracted_vertices AS vids INTO contracted_vertices FROM pgr_contractGraph('SELECT id, source, target, cost FROM cleaned_ways', ARRAY[1]);
+--SELECT id AS parent, contracted_vertices AS vids INTO contracted_vertices FROM pgr_contractGraph('SELECT id, source, target, cost FROM cleaned_ways', ARRAY[1]);
 
 -- Storing contracted edges
-SELECT id, source, target INTO contracted_ways FROM cleaned_ways 
-WHERE source IN (SELECT distinct(unnest(vids)) FROM contracted_vertices)
-OR target IN  (SELECT distinct(unnest(vids)) FROM contracted_vertices);
-CREATE INDEX cid_index ON contracted_ways(id);
+--SELECT id, source, target INTO contracted_ways FROM cleaned_ways 
+--WHERE source IN (SELECT distinct(unnest(vids)) FROM contracted_vertices)
+--OR target IN  (SELECT distinct(unnest(vids)) FROM contracted_vertices);
+--CREATE INDEX cid_index ON contracted_ways(id);
 
 
 -- Applying contraction to the cleaned_ways table 
-DELETE FROM cleaned_ways 
-WHERE id IN (SELECT id FROM contracted_ways);
+--DELETE FROM cleaned_ways 
+--WHERE id IN (SELECT id FROM contracted_ways);
 
 -- Updating the parent vertices after contraction 
-UPDATE cleaned_ways_vertices_pgr SET parent = foo.parent 
-FROM (SELECT parent, unnest(vids) AS vid FROM contracted_vertices) AS foo
-WHERE cleaned_ways_vertices_pgr.id = foo.vid;
+--UPDATE cleaned_ways_vertices_pgr SET parent = foo.parent 
+--FROM (SELECT parent, unnest(vids) AS vid FROM contracted_vertices) AS foo
+--WHERE cleaned_ways_vertices_pgr.id = foo.vid;
  
 -- Creating index on edge table 
 CREATE INDEX cst_index ON cleaned_ways(source, target);

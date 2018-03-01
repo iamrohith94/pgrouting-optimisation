@@ -10,7 +10,7 @@ import math
 import sys
 table_name = "cleaned_ways"
 db_name= sys.argv[1]
-n_cells = sys.argv[2]
+n_cells = int(sys.argv[2])
 
 conn = psycopg2.connect(database=db_name, user="postgres", password="postgres", host="127.0.0.1", port="5432")
 
@@ -21,8 +21,6 @@ ST_Y(st_setsrid(st_makepoint(st_xmin(st_extent(the_geom)), st_ymin(st_extent(the
 ST_X(st_setsrid(st_makepoint(st_xmax(st_extent(the_geom)), st_ymax(st_extent(the_geom))), 4326)),  \
 ST_Y(st_setsrid(st_makepoint(st_xmax(st_extent(the_geom)), st_ymax(st_extent(the_geom))), 4326)) \
 from " + table_name;
-
-
 
 
 cur.execute(bbox_query)
@@ -36,7 +34,7 @@ y_min = sw[1]
 x_max = ne[0]
 y_max = ne[1]
 
-print "y_max: " , y_max
+#print "y_max: " , y_max
 #print "SW: " + str(sw)
 #print "NE: " + str(ne)
 
@@ -50,27 +48,7 @@ Fetching length and breadth in 4326 projection
 Used for getting square bounding box coordinates
 
 """
-'''
-length_query = "SELECT ST_Distance( \
-    st_makepoint(" + str(x_min) + ", " + str(y_min) + "), \
-    st_makepoint(" + str(x_max) + ", " + str(y_min) + "));"
 
-breadth_query = "SELECT ST_Distance( \
-    st_makepoint(" + str(x_min) + ", " + str(y_min) + "), \
-    st_makepoint(" + str(x_min) + ", " + str(y_max) + "));"
-
-cur.execute(length_query)
-rows = cur.fetchall()
-for row in rows:
-    length = row
-length = length[0]
-
-cur.execute(breadth_query)
-rows = cur.fetchall()
-for row in rows:
-    breadth = row
-breadth = breadth[0]
-'''
 length = x_max - x_min
 breadth = y_max - y_min
 
@@ -163,73 +141,40 @@ rows = cur.fetchall()
 for row in rows:
     sq_ne_text = row[0];
 
-
-
-"""
-Fetching length and breadth in 2100 projection in kms
-Used for generating grids
-
-
-length_kms_query = "SELECT ST_Distance(\
-            ST_Transform(\
-            ST_GeomFromText('"+sw_text+"',4326),2100),\
-            ST_Transform(\
-            ST_GeomFromText('"+se_text+"',4326),2100)) / 1000.0 ;"
-
-breadth_kms_query = "SELECT ST_Distance(\
-            ST_Transform(\
-            ST_GeomFromText('"+sw_text+"',4326),2100),\
-            ST_Transform(\
-            ST_GeomFromText('"+nw_text+"',4326),2100)) / 1000.0 ;"
-
-"""
-
-"""
-spheroid = 'SPHEROID["WGS 84",6378137,298.257223563]';
-length_kms_query = "SELECT ST_Distance_Spheroid(\
+length_query = "SELECT ST_Distance(\
             ST_GeomFromText('"+sq_sw_text+"'),\
-            ST_GeomFromText('"+sq_se_text+"'),\
-            '"+str(spheroid)+"') / 980.0 ;"
+            ST_GeomFromText('"+sq_se_text+"')) ;"
+breadth_query = "SELECT ST_Distance(\
+            ST_GeomFromText('"+sq_sw_text+"'),\
+            ST_GeomFromText('"+sq_nw_text+"')) ;"
 
-breadth_kms_query = "SELECT ST_Distance_Spheroid(\
-            ST_GeomFromText('"+sq_sw_text+"'),\
-            ST_GeomFromText('"+sq_nw_text+"'),\
-            '"+str(spheroid)+"') / 980.0 ;"
-"""
-length_kms_query = "SELECT ST_Distance(\
-            ST_GeomFromText('"+sq_sw_text+"'),\
-            ST_GeomFromText('"+sq_se_text+"')) * 111.0 ;"
-breadth_kms_query = "SELECT ST_Distance(\
-            ST_GeomFromText('"+sq_sw_text+"'),\
-            ST_GeomFromText('"+sq_nw_text+"')) * 111.0 ;"
-
-cur.execute(length_kms_query)
+cur.execute(length_query)
 rows = cur.fetchall()
 for row in rows:
     length = row
-length_kms = length[0]
+length = float(length[0])
 
-cur.execute(breadth_kms_query)
+cur.execute(breadth_query)
 rows = cur.fetchall()
 for row in rows:
     breadth = row
-breadth_kms = breadth[0]
+breadth = float(breadth[0])
 
-print "length in kms: ", length_kms
-print "breadth in kms: ", breadth_kms
+print "length: ", length
+print "breadth: ", breadth
 
-if length_kms > breadth_kms:
-    sq_size_kms = length_kms
+if length > breadth:
+    sq_size = length
 else:
-    sq_size_kms = breadth_kms
+    sq_size = breadth
 
+grid_query = "SELECT * FROM RegularGridXY(\
+            ST_X(ST_GeomFromText('"+sq_sw_text+"'))::numeric , ST_Y(ST_GeomFromText('"+sq_sw_text+"'))::numeric, \
+            ST_X(ST_GeomFromText('"+sq_ne_text+"'))::numeric , ST_Y(ST_GeomFromText('"+sq_ne_text+"'))::numeric \
+            ,"+str(sq_size/float(n_cells))+", "+str(sq_size/float(n_cells))+", \
+            "+str(n_cells)+", "+str(n_cells)+", 4326)";
 
-sq_sw_text = 'POINT('+str(sq_sw_X)+' '+str(sq_sw_Y)+')'; 
-
-
-grid_query = "SELECT * FROM ST_CreateGrids(\
-                '"+sq_sw_text+"', "+str(sq_size_kms)+", "+str(sq_size_kms)+", "+\
-                str(n_cells)+", "+str(n_cells)+")";
+#print grid_query
 
 cur.execute(grid_query);
 rows = cur.fetchall()
@@ -239,11 +184,6 @@ for r in rows:
     cur.execute(i_query);
 conn.commit();
 
-'''
-populate_grids_query = "SELECT * FROM ST_PopulateGrids()";
-cur.execute(populate_grids_query);
-conn.commit();
-'''
 populate_vertices_query = "SELECT * FROM ST_PopulateVertices()";
 cur.execute(populate_vertices_query);
 conn.commit();

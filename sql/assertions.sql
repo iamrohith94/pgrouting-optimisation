@@ -209,5 +209,5 @@ SELECT assert_unassigned_component('cleaned_ways', 'cleaned_ways_vertices_pgr', 
 --SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
 SELECT assert_edge_count('cleaned_ways', :num_levels);
 SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);
-SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);
+--SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);
 --SELECT assert_component_connectivity('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
