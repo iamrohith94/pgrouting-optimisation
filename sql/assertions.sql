@@ -204,10 +204,50 @@ END;
 $BODY$
 LANGUAGE plpgsql VOLATILE STRICT;
 
+
+
+CREATE OR REPLACE FUNCTION assert_path_existence(
+	edge_table TEXT,
+	num_levels INTEGER)
+RETURNS VOID AS
+$BODY$
+DECLARE
+component RECORD;
+edges_sql TEXT;
+comp_query TEXT;
+comp_edges_query TEXT;
+comp_count_query TEXT;
+level INTEGER;
+comp_count INTEGER;
+comp_id BIGINT;
+BEGIN
+	FOR level IN 1..num_levels
+	LOOP
+		edges_sql := 'SELECT id, source, target, cost FROM ' 
+			|| edge_table ;
+		comp_query := 'SELECT DISTINCT(component) AS id FROM pgr_strongComponents('
+		|| quote_literal(edges_sql) || ');';
+		comp_edges_query := 'SELECT id, source, target, cost FROM %s WHERE ABS(component_%s) = %s 
+		OR ABS(component_%s) = %s';
+		comp_count_query := 'SELECT count(DISTINCT(component)) FROM pgr_strongComponents(%s);';
+		FOR component IN EXECUTE comp_query
+		LOOP
+			EXECUTE format(comp_count_query, 
+				quote_literal(format(comp_edges_query, edge_table, level, 1, level, component.id))) 
+			INTO comp_count;
+			ASSERT comp_count = 1;
+		END LOOP;
+	END LOOP;
+
+END;
+$BODY$
+LANGUAGE plpgsql VOLATILE STRICT;
+
 SELECT assert_skeleton_strongly_connected('cleaned_ways', :num_levels);
 SELECT assert_unassigned_component('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
 --SELECT assert_skeleton_comp_id('cleaned_ways', :num_levels);
 SELECT assert_edge_count('cleaned_ways', :num_levels);
 SELECT assert_vertex_count('cleaned_ways_vertices_pgr', :num_levels);
+SELECT assert_path_existence('cleaned_ways', :num_levels);
 --SELECT assert_skeletal_parent('cleaned_ways_vertices_pgr', :num_levels);
 --SELECT assert_component_connectivity('cleaned_ways', 'cleaned_ways_vertices_pgr', :num_levels);
