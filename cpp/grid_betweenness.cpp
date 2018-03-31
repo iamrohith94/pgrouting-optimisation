@@ -35,8 +35,8 @@ void get_betweenness_vertices_from_db(std::string dbname,
 	std::string conn_str = "dbname = %s user = postgres password = postgres \
 	hostaddr = 127.0.0.1 port = 5432";
 	conn_str = (boost::format(conn_str) % dbname).str().c_str();
-	std::string array_sql = "SELECT * FROM grid_betweenness_pairs(%s, %s)";
-	
+	//std::string array_sql = "SELECT * FROM grid_betweenness_pairs(%s, %s)";
+	std::string array_sql = "SELECT unnest(chosen_nodes) FROM grids";
 	
 	try {
 		pqxx::connection C(conn_str.c_str());

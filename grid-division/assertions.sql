@@ -8,7 +8,7 @@ unass_count_query TEXT;
 count INTEGER;
 BEGIN
 	unass_count_query := 'SELECT count(*) FROM '
-	|| vertex_table || ' WHERE grid_id = 0 AND parent = id;';
+	|| vertex_table || ' WHERE grid_id = 0;';
 	EXECUTE unass_count_query INTO count;
 	ASSERT count = 0;
 
