@@ -578,7 +578,7 @@ void get_connecting_edges(GGraph& g,
 	while (!get_astar_path(bg, bg_s, bg_t, path)) {
 		//std::cout << "Attempt: " << attempts++ << std::endl;
 		path.clear();
-		print_geom_graph(bg);
+		//print_geom_graph(bg);
 		double_square_bbox(bbox);
 		get_bounding_graph(g, bg, 
 			id_to_V, 
