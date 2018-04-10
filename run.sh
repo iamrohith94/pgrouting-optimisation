@@ -14,19 +14,21 @@ echo $num_grids
 echo 'Exponent: '
 echo $exponent
 
+bash compile.sh
+
 echo 'A. Preprocessing'
 echo '1. Network Cleaning'
-psql -U postgres $dbname -v num_levels=$num_levels < sql/preprocess.sql
+#psql -U postgres $dbname -v num_levels=$num_levels < sql/preprocess.sql
 echo '2. Storing Graph in a csv file'
-psql -U postgres -d $dbname -t -A -F"," -c "select id, source, target, cost from cleaned_ways" > "./data/$dbname.csv"
+#psql -U postgres -d $dbname -t -A -F"," -c "select id, source, target, cost from cleaned_ways" > "./data/$dbname.csv"
 echo '3. Network Division into Grids'
-bash grid-division/grids.sh $dbname $num_grids
+#bash grid-division/grids.sh $dbname $num_grids
 
 echo 'Edge Priority and Levels'
 echo '1. Creating a function that fetches vertices grid wise'
-psql -U postgres $dbname < sql/betweenness_st_pairs.sql
+#psql -U postgres $dbname < sql/betweenness_st_pairs.sql
 echo '2. Computing priority using grid based approach'
-time mpirun -n 8 time ./g_b $dbname $num_levels $exponent > "data/${dbname}_geom_levels_out.txt"
+time mpirun -n 1 time ./g_b $dbname $num_levels $exponent > "data/${dbname}_geom_levels_out.txt"
 echo '3. Update priority and level of edges in edge table'
 psql -U postgres $dbname -v db="'$dbname'"  < sql/populate_betweenness.sql
 

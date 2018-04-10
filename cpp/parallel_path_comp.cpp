@@ -28,17 +28,30 @@ void get_process_connections(std::string file_name,
 	std::vector<Connection>& connections,
 	int process_id, int num_processes, const char delimiter) {
 	connections.clear();
-	int num_lines = line_count(file_name);
-	int bucket_size = num_lines/num_processes;
-	int start = process_id*bucket_size;
-	int end = start + bucket_size;
-	if (end + bucket_size >= num_lines && end < num_lines) {
-		end += num_lines%num_processes;
-	}
 	std::string line;
 	int curr = 0;
 	Connection temp;
 	std::ifstream myfile(file_name.c_str());
+	int num_lines = line_count(file_name);
+	int bucket_size;
+	if (num_lines >= num_processes) {
+	 	bucket_size = num_lines/num_processes;
+	}
+	else 
+		bucket_size = num_lines/num_processes +1;
+	int start = process_id*bucket_size;
+	int end;
+	if (process_id == num_processes-1) {
+		end = num_lines;
+	}
+	else {
+		end = start + bucket_size;
+	}
+	/*
+	if (end + bucket_size >= num_lines && end < num_lines && num_lines > num_processes) {
+		end += num_lines%num_processes;
+	}*/
+	
 
 	//std::cout << start << ", " << end << ", process: " << process_id << std::endl;
 	//Getting to the start line
@@ -117,8 +130,9 @@ int main(int argc, char *argv[])
 		std::string s; 
 		std::ostringstream oss;
 		//Constructing the graph from csv file
+		//std::cout << "graph file: " << graph_file_name << std::endl;
 		flag = construct_graph_with_geometry(graph_file_name, ',', g, id_to_V, id_to_E);
-		//print_geom_graph(g);
+		print_geom_graph(g);
 		if (flag == 1) {
 			boost::archive::text_oarchive oa(oss);
 			oa << flag << g << id_to_E << id_to_V;
@@ -146,8 +160,10 @@ int main(int argc, char *argv[])
 	get_process_connections("./data/"+connections_file_name+".csv", connections, world.rank(), world.size(), ',');
 	std::cout << "Received " << connections.size() << " connnections by " << world.rank() << std::endl;
 	start = MPI_Wtime();
+	std::cout << "Starting...." << std::endl;
 	for (int i = 0; i < connections.size(); ++i) {
-		
+		//std::cout << "source: " << connections[i].source << std::endl;
+		//std::cout << "target: " << connections[i].target << std::endl;
 		get_connecting_edges(g,
 			id_to_V,
 			connections[i].source, 

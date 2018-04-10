@@ -15,7 +15,7 @@ BEGIN
 	LOOP 
 		skeleton_sql := 'SELECT id, source, target, cost FROM ' 
 			|| edge_table || ' WHERE component_' || level || ' = 1;';
-		comp_count_query := 'SELECT count(DISTINCT(component)) FROM pgr_strongComponents('
+		comp_count_query := 'SELECT count(DISTINCT component) FROM pgr_strongComponents('
 		|| quote_literal(skeleton_sql) || ');';
 		EXECUTE comp_count_query INTO comp_count;
 		ASSERT comp_count = 1;
@@ -47,7 +47,7 @@ BEGIN
                 EXECUTE edge_sql_count INTO edge_count;
                 ASSERT edge_count = 0;
 		 vertex_sql_count := 'SELECT count(*) FROM '
-                        || vertex_table || ' WHERE component_' || level || ' = 0 AND parent = id' ;
+                        || vertex_table || ' WHERE component_' || level || ' = 0' ;
                 EXECUTE vertex_sql_count INTO vertex_count;
                 ASSERT vertex_count = 0;
         END LOOP;

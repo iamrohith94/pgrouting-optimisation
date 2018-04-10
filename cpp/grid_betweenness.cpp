@@ -42,11 +42,12 @@ void get_betweenness_vertices_from_db(std::string dbname,
 		pqxx::connection C(conn_str.c_str());
 		if (C.is_open()) {
 			pqxx::work N(C);
-			array_sql = (boost::format(array_sql) 
-			%N.quote(vertex_table) %p).str();
+			//array_sql = (boost::format(array_sql) 
+			//%N.quote(vertex_table) %p).str();
 			pqxx::result R2( N.exec( array_sql.c_str() ));
 			for (pqxx::result::const_iterator c = R2.begin(); c != R2.end(); ++c) {
-				get_vector_from_string(c[0].as<std::string>(), v);
+				//get_vector_from_string(c[0].as<std::string>(), v);
+				v.push_back(c[0].as<long int>());
 			}
 		} else {
 			std::cout << "Can't open database" << std::endl;
@@ -78,7 +79,7 @@ void get_dijkstra_paths(Graph &g,
 	Dijkstra<Graph> d;
 	std::vector<E> path_edges;
 	for (int i = 0; i < st_pairs.size(); ++i) {
-		//std::cout << "source: " << st_pairs[i].first << ", target: " << st_pairs[i].second << std::endl;
+		std::cout << "source: " << st_pairs[i].first << ", target: " << st_pairs[i].second << std::endl;
 
 		assert(d.do_dijkstra(g, id_to_V[st_pairs[i].first]
 			, id_to_V[st_pairs[i].second]));
@@ -88,8 +89,8 @@ void get_dijkstra_paths(Graph &g,
 			path_edges);
 		
 		for (int j = 0; j < path_edges.size(); ++j) {
-			//std::cout << "(" << g[path_edges[j]].source << ", " 
-			//<< g[path_edges[j]].target << "), process: " << process_id << std::endl; 
+			std::cout << "(" << g[path_edges[j]].source << ", " 
+			<< g[path_edges[j]].target << "), process: " << process_id << std::endl; 
 			++individual_betweenness[g[path_edges[j]].idx];
 		}
 

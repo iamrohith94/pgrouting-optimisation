@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 db = sys.argv[1]
 table_e = 'cleaned_ways'
 table_v = 'cleaned_ways_vertices_pgr'
-scc_table = 'scc_ways'
+scc_table = 'cleaned_ways'
 
 d = {}
 d["db"] = db
@@ -18,7 +18,7 @@ d['conn'] = conn
 cur = conn.cursor()
 num_levels = int(sys.argv[2])
 width = 0.55
-skeleton_query = "SELECT count(*) FROM %s WHERE component_%s = 1";
+skeleton_query = "SELECT count(*) FROM %s WHERE ABS(component_%s) = 1";
 size_query = "SELECT count(*) FROM %s"
 
 

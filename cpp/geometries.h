@@ -546,6 +546,7 @@ void get_connecting_edges(GGraph& g,
 
 
 	bg::model::box<point_t> bbox;
+
 	
 	//Generating bbox 
 	get_bbox(point_t(g[id_to_V[s_id]].x, g[id_to_V[s_id]].y), 
@@ -570,10 +571,14 @@ void get_connecting_edges(GGraph& g,
 	V_g bg_s = id_to_V_b[s_id];
 	V_g bg_t = id_to_V_b[t_id];
 
+	//std::cout << "Getting path" << std::endl;
+	int attempts = 1;
+
 	// Double the bounding box until path is found
 	while (!get_astar_path(bg, bg_s, bg_t, path)) {
+		//std::cout << "Attempt: " << attempts++ << std::endl;
 		path.clear();
-		//print_geom_graph(bg);
+		print_geom_graph(bg);
 		double_square_bbox(bbox);
 		get_bounding_graph(g, bg, 
 			id_to_V, 

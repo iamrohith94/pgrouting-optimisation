@@ -9,7 +9,7 @@ from cycler import cycler
 db = sys.argv[1]
 table_e = 'cleaned_ways'
 table_v = 'cleaned_ways_vertices_pgr'
-scc_table = 'scc_ways'
+scc_table = 'cleaned_ways'
 d = {}
 d["db"] = db
 d["table_e"] = table_e
@@ -47,10 +47,17 @@ for i in levels:
         cur.execute(comp_query, (AsIs(table_e), i, i));
         rows = cur.fetchall();
         for row in rows:
-                #print "row: ", row[0]
+                #print "row: ", row[1]
+                #print "row: ", row[2]
                 #min_sizes.append(float(row[0])*100.00/(E*1.00));
-                avg_sizes.append(float(row[1])*100.00/(E*1.00));
-                max_sizes.append(float(row[2])*100.00/(E*1.00));
+                if row[1]:
+                    avg_sizes.append(float(row[1])*100.00/(E*1.00));
+                else:
+                    avg_sizes.append(0);
+                if row[2]:                    
+                    max_sizes.append(float(row[2])*100.00/(E*1.00));
+                else:
+                    max_sizes.append(0)
 
 print max_sizes
 

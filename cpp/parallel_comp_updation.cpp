@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	skeletal_v_update_sql = "UPDATE %s \
 	SET component_%s = 1 \
 	FROM %s AS edges \
-	WHERE %s.id = %s.parent AND (%s.id = edges.source OR %s.id = edges.target) AND edges.component_%s = 1;";
+	WHERE (%s.id = edges.source OR %s.id = edges.target) AND edges.component_%s = 1;";
 
 	//Update skeletal edges with same id
 	skeletal_e_id_update = "UPDATE %s \
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
 
 	// Vertices other than skeleton
-	non_skeletal_v_sql = "SELECT id FROM %s WHERE component_%s != 1 AND id = parent";
+	non_skeletal_v_sql = "SELECT id FROM %s WHERE component_%s != 1";
 
 	// All edges except skeletal edges and edges connecting the skeleton
 	residue_sql = "SELECT id, source, target, cost \
@@ -110,7 +110,8 @@ try {
 		for (int i = 1; i <= num_levels; ++i) {
 			std::cout << "curr_level: " << i  << std::endl;
 			component_ids.clear();
-			component_vertices_array.clear();				
+			component_vertices_array.clear();		
+
 			//Initialisation
 			pqxx::work I0(C);
 			temp = (boost::format(initialise_sql) %edge_table %i).str();
@@ -133,7 +134,7 @@ try {
 			// Update the vertices of skeleton
 			pqxx::work W(C);
 			temp = (boost::format(skeletal_v_update_sql) %vertex_table %i
-				%edge_table %vertex_table %vertex_table  %vertex_table %vertex_table %i).str();
+				%edge_table %vertex_table %vertex_table  %i).str();
 			W.exec( temp.c_str() );
 			W.commit();
 			
@@ -223,7 +224,7 @@ try {
 			temp = (boost::format(cut_v_update_sql) %vertex_table
 				%i %vertex_table %i %edge_table %edge_table %vertex_table %edge_table %vertex_table
 				%vertex_table %i %edge_table %i).str();
-			std::cout << "log: " << temp << std::endl;
+			//std::cout << "log: " << temp << std::endl;
 			U2.exec(temp.c_str());
 			U2.commit();
 
