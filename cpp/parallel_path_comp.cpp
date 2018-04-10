@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 		//Constructing the graph from csv file
 		//std::cout << "graph file: " << graph_file_name << std::endl;
 		flag = construct_graph_with_geometry(graph_file_name, ',', g, id_to_V, id_to_E);
-		print_geom_graph(g);
+		//print_geom_graph(g);
 		if (flag == 1) {
 			boost::archive::text_oarchive oa(oss);
 			oa << flag << g << id_to_E << id_to_V;
